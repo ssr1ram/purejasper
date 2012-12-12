@@ -1,4 +1,4 @@
-pure-jasper
+purejasper
 ===========
 
-A web-word processor in a self-contained static javascript file 
+A web-word processor with tabs, links and scripts.
