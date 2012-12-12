@@ -495,7 +495,7 @@ buf.push('></textarea></div></div></div></div><div');
 buf.push(attrs({ 'style':('text-align:center') }));
 buf.push('><div');
 buf.push(attrs({ 'style':('color:#ccc;margin-top:20px;letter-spacing:3px') }));
-buf.push('>RamDocs</div></div></div></div><div');
+buf.push('>&copy; 2013 purejasper.com</div></div></div></div><div');
 buf.push(attrs({ 'style':('display:none'), "class": ('modal') + ' ' + ('ymodal') }));
 buf.push('></div>');
 }
@@ -1592,6 +1592,7 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
 
   $(function() {
     window.Ramdoc = {
+      ext: "pjs",
       navigate: function(path, trigger) {
         if (trigger == null) trigger = true;
         return appRouter.navigate(path, {
