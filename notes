@@ -1,0 +1,12 @@
+Static file serving from github
+----
+
+q.html  can be reached with /q
+p/index.html    can be reached with /p
+p       gets downloaded when called with /p
+
+
+CNAME
+-----
+
+file is necessary
