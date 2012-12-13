@@ -1127,7 +1127,7 @@ return buf.join("");
 
 require.define("/filemanager/manager.coffee", function (require, module, exports, __dirname, __filename) {
 (function() {
-  var copytoT, deleteT, dropio, managerT, newT, noselT, publishT, renameT;
+  var copytoT, deleteT, dropio, managerT, newT, noselT, publishT, publishmlT, renameT;
 
   managerT = require('./manager.jade');
 
@@ -1144,6 +1144,8 @@ require.define("/filemanager/manager.coffee", function (require, module, exports
   noselT = require('./nosel.jade');
 
   publishT = require('./publish.jade');
+
+  publishmlT = require('./publishml.jade');
 
   module.exports = Backbone.View.extend({
     initialize: function() {
@@ -1301,13 +1303,14 @@ require.define("/filemanager/manager.coffee", function (require, module, exports
       }
     },
     dopublish: function(ev) {
-      var d, fname, html;
+      var d, fname, html, self;
+      self = this;
       this.thefile = $(".thefile").val();
       if (this.thefile) {
         d = {
           paras: Paradoc.paras.toJSON()
         };
-        html = publishT({
+        html = publishmlT({
           paras: JSON.stringify(d)
         });
         fname = this.thefile.replace('.pjs', '') + '.html';
@@ -1315,7 +1318,11 @@ require.define("/filemanager/manager.coffee", function (require, module, exports
         return dropio.save(fname, html, function() {
           console.log('saved');
           return dropio.geturl(fname, function(url) {
-            return console.log('url is ' + url.url);
+            console.log('url is ' + url.url);
+            return $(".actionspot", this.el).html(publishT({
+              thefile: self.thefile,
+              theurl: url.url.replace('www.', 'dl.').replace('https', 'http')
+            }));
           });
         });
       }
@@ -1497,6 +1504,22 @@ return buf.join("");
 });
 
 require.define("/filemanager/publish.jade", function (require, module, exports, __dirname, __filename) {
+module.exports = function anonymous(locals, attrs, escape, rethrow) {
+var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+var buf = [];
+with (locals || {}) {
+var interp;
+buf.push('<div><h3>Published url<div><label>File</label><input');
+buf.push(attrs({ 'type':('text'), 'readonly':('true'), 'value':('' + (thefile) + ''), 'style':('width:90%') }));
+buf.push('/></div><div><label>url</label><input');
+buf.push(attrs({ 'type':('text'), 'readonly':('true'), 'value':('' + (theurl) + ''), 'style':('width:90%') }));
+buf.push('/></div></h3></div>');
+}
+return buf.join("");
+};
+});
+
+require.define("/filemanager/publishml.jade", function (require, module, exports, __dirname, __filename) {
 module.exports = function anonymous(locals, attrs, escape, rethrow) {
 var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
 var buf = [];
