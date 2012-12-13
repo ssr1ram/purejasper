@@ -503,107 +503,6 @@ return buf.join("");
 };
 });
 
-require.define("/db/dropio.coffee", function (require, module, exports, __dirname, __filename) {
-(function() {
-  var startdb;
-
-  startdb = require('./startdb');
-
-  module.exports = {
-    start: function(cb) {
-      var self;
-      self = this;
-      this.client = new Dropbox.Client({
-        key: 'd1F4ZEi4WFA=|vpqGx6/s9BAtYdIgqBBv30UIpAuQajpBRVUGrb2hBg==',
-        sandbox: true
-      });
-      this.client.authDriver(new Dropbox.Drivers.Redirect({
-        rememberUser: true
-      }));
-      return this.client.authenticate(function(err, data) {
-        if (err) {
-          alert('error');
-          return;
-        }
-        return self.client.getUserInfo(function(err, userInfo) {
-          return cb(userInfo);
-        });
-      });
-    },
-    save: function(filename, contents, cb) {
-      return this.client.writeFile(filename, contents, {}, function(err, stat) {
-        if (cb) return cb();
-      });
-    },
-    create: function(filename, cb) {
-      var contents;
-      contents = JSON.stringify(startdb);
-      return this.client.writeFile(filename, contents, {}, function(err, stat) {
-        if (cb) return cb();
-      });
-    },
-    remove: function(filename, cb) {
-      return this.client.remove(filename, function(err, stat) {
-        if (cb) return cb();
-      });
-    },
-    copyto: function(fromfile, tofile, cb) {
-      return this.client.copy(fromfile, tofile, function(err, stat) {
-        if (cb) return cb();
-      });
-    },
-    rename: function(fromfile, tofile, cb) {
-      return this.client.move(fromfile, tofile, function(err, stat) {
-        if (cb) return cb();
-      });
-    },
-    read: function(filename, cb) {
-      return this.client.readFile(filename, {}, function(err, data) {
-        if (err) {
-          console.log('error ' + err.status);
-          return cb(JSON.stringify(startdb));
-        } else {
-          return cb(data);
-        }
-      });
-    },
-    readdir: function(dir, cb) {
-      return this.client.readdir(dir, {}, function(err, data) {
-        if (!data) data = JSON.stringify(data);
-        return cb(data);
-      });
-    },
-    geturl: function(filename, cb) {
-      return this.client.makeUrl(filename, {
-        downloadHack: true
-      }, function(err, data) {
-        return cb(data);
-      });
-    }
-  };
-
-}).call(this);
-
-});
-
-require.define("/db/startdb.coffee", function (require, module, exports, __dirname, __filename) {
-
-  module.exports = {
-    "paras": [
-      {
-        "name": "Home",
-        "slug": "home",
-        "contents": "<h4>This is a Pure Jasper document.</h4> It contains many paragraphs that link to each other, can be navigated in tabs and have a mix of text, links, html, widgets and scripts.<br><br><ul><li>To Edit this para:&nbsp;Click edit on the top right of this message box</li><li>To Create a new para:&nbsp;Type `[[Para Name]] (without the backtick)&nbsp;</li><ul><li>This will create a special link which when clicked will open a new para in a tab</li><li>Something like this:&nbsp;<a class=\"paralink\" href=\"#para/about\" data-para=\"about\" title=\"Link: #para/about\">About</a></li></ul></ul>Click on the FileName to bring up the File Manager, which allows you to create new documents etc.<br>"
-      }, {
-        "name": "About",
-        "slug": "about",
-        "contents": "About this document<br><br>edit me or go back <a class=\"paralink\" href=\"#para/home\" data-para=\"home\">Home</a>&nbsp;"
-      }
-    ]
-  };
-
-});
-
 require.define("/paras/paratabs.coffee", function (require, module, exports, __dirname, __filename) {
 (function() {
   var oneParaM, paraTabsT;
@@ -1054,465 +953,105 @@ return buf.join("");
 };
 });
 
-require.define("/filemanager/actions.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/db/dropio.coffee", function (require, module, exports, __dirname, __filename) {
 (function() {
-  var dropio, fileactionsT, managerM;
+  var startdb;
 
-  fileactionsT = require('./actions.jade');
+  startdb = require('./startdb');
 
-  managerM = require('./manager.coffee');
-
-  dropio = require('../db/dropio');
-
-  module.exports = Backbone.View.extend({
-    initialize: function() {
-      this.filename = this.options.filename;
-      return this.render();
-    },
-    events: {
-      "click .domanager": "domanager"
-    },
-    render: function() {
-      $(this.el).html(fileactionsT({
-        filename: this.filename
-      }));
-      return $(".menubar").html(this.el);
-    },
-    domanager: function(ev) {
-      var m;
-      m = new managerM();
-      return ev.preventDefault();
-    },
-    xdomanager: function(ev) {
-      dropio.readdir("/", function(flist) {
-        $(".ymodal").empty().html(managerT({
-          flist: flist
-        })).show();
-        return $(".ymodal").modal("show");
-      });
-      return ev.preventDefault();
-    }
-  });
-
-}).call(this);
-
-});
-
-require.define("/filemanager/actions.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<div');
-buf.push(attrs({ 'style':('position:absolute;top:0px;right:0px') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('margin-top:0px'), "class": ('btn-toolbar') }));
-buf.push('><div');
-buf.push(attrs({ "class": ('btn-group') }));
-buf.push('><a');
-buf.push(attrs({ 'data-toggle':('dropdown'), "class": ('btn') + ' ' + ('dropdown-toggle') }));
-buf.push('>' + escape((interp = filename.replace('.pjs', '')) == null ? '' : interp) + '\n<span');
-buf.push(attrs({ "class": ('caret') }));
-buf.push('></span></a><ul');
-buf.push(attrs({ "class": ('dropdown-menu') }));
-buf.push('><li><a');
-buf.push(attrs({ "class": ('domanager') }));
-buf.push('>File Manager</a></li></ul></div></div></div>');
-}
-return buf.join("");
-};
-});
-
-require.define("/filemanager/manager.coffee", function (require, module, exports, __dirname, __filename) {
-(function() {
-  var copytoT, deleteT, dropio, managerT, newT, noselT, publishT, renameT;
-
-  managerT = require('./manager.jade');
-
-  dropio = require('../db/dropio');
-
-  copytoT = require('./copyto.jade');
-
-  renameT = require('./rename.jade');
-
-  deleteT = require('./delete.jade');
-
-  newT = require('./new.jade');
-
-  noselT = require('./nosel.jade');
-
-  publishT = require('./publish.jade');
-
-  module.exports = Backbone.View.extend({
-    initialize: function() {
-      return this.render();
-    },
-    events: {
-      "click .docopyto": "docopyto",
-      "click .dorename": "dorename",
-      "click .dodelete": "dodelete",
-      "click .donew": "donew",
-      "click .doopen": "doopen",
-      "click .dopublish": "dopublish",
-      "click .showcopyto": "showcopyto",
-      "click .showrename": "showrename",
-      "click .showdelete": "showdelete",
-      "click .shownew": "shownew"
-    },
-    render: function(ev) {
+  module.exports = {
+    start: function(cb) {
       var self;
       self = this;
-      return dropio.readdir("/", function(flist) {
-        self.flist = flist;
-        $(self.el).html(managerT({
-          flist: flist
-        }));
-        self.delegateEvents();
-        $(".ymodal").empty().html(self.el).show();
-        return $(".ymodal").modal("show");
+      this.client = new Dropbox.Client({
+        key: 'd1F4ZEi4WFA=|vpqGx6/s9BAtYdIgqBBv30UIpAuQajpBRVUGrb2hBg==',
+        sandbox: true
       });
-    },
-    getthefile: function() {
-      this.thefile = $(".thefile").val();
-      if (!this.thefile) {
-        $(".actionspot", this.el).html(noselT);
-        return false;
-      }
-      return true;
-    },
-    showcopyto: function(ev) {
-      if (this.getthefile()) {
-        return $(".actionspot", this.el).html(copytoT({
-          thefile: this.thefile
-        }));
-      }
-    },
-    showrename: function(ev) {
-      if (this.getthefile()) {
-        return $(".actionspot", this.el).html(renameT({
-          thefile: this.thefile
-        }));
-      }
-    },
-    showdelete: function(ev) {
-      if (this.getthefile()) {
-        return $(".actionspot", this.el).html(deleteT({
-          thefile: this.thefile
-        }));
-      }
-    },
-    shownew: function(ev) {
-      return $(".actionspot", this.el).html(newT);
-    },
-    docopyto: function(ev) {
-      var f, fxists, self, tofile, _i, _len, _ref;
-      self = this;
-      tofile = $("input[name='tofile']").val();
-      if (!tofile) {
-        $(".errspot", this.el).html("Please enter a file name");
-        return;
-      }
-      fxists = false;
-      _ref = this.flist;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        f = _ref[_i];
-        if (tofile.replace('.pjs', '') === f.replace('.pjs', '')) fxists = true;
-      }
-      if (fxists) {
-        $(".errspot", this.el).html("File exists");
-        return;
-      }
-      if (tofile.indexOf('.pjs') === -1) tofile = tofile + ".pjs";
-      return dropio.copyto(this.thefile, tofile, function() {
-        $(".ymodal").modal("hide");
-        $(self.el).remove();
-        return self.render();
-      });
-    },
-    dorename: function(ev) {
-      var f, fxists, self, tofile, _i, _len, _ref;
-      self = this;
-      tofile = $("input[name='tofile']").val();
-      if (!tofile) {
-        $(".errspot", this.el).html("Please enter a file name");
-        return;
-      }
-      fxists = false;
-      _ref = this.flist;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        f = _ref[_i];
-        if (tofile.replace('.pjs', '') === f.replace('.pjs', '')) fxists = true;
-      }
-      if (fxists) {
-        $(".errspot", this.el).html("File exists");
-        return;
-      }
-      if (tofile.indexOf('.pjs') === -1) tofile = tofile + ".pjs";
-      return dropio.rename(this.thefile, tofile, function() {
-        $(".ymodal").modal("hide");
-        $(self.el).remove();
-        return self.render();
-      });
-    },
-    dodelete: function(ev) {
-      var self, x;
-      self = this;
-      dropio.remove(this.thefile, function() {
-        $(".ymodal").modal("hide");
-        $(self.el).remove();
-        return self.render();
-      });
-      return x = 1;
-    },
-    donew: function(ev) {
-      var f, fxists, nufile, _i, _len, _ref;
-      nufile = $("input[name='nufile']").val();
-      if (!nufile) {
-        $(".errspot", this.el).html("Please enter a file name");
-        return;
-      }
-      fxists = false;
-      _ref = this.flist;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        f = _ref[_i];
-        if (nufile.replace('.pjs', '') === f.replace('.pjs', '')) fxists = true;
-      }
-      if (fxists) {
-        $(".errspot", this.el).html("File exists");
-        return;
-      }
-      if (nufile.indexOf('.pjs') === -1) nufile = nufile + ".pjs";
-      return dropio.create(nufile, function() {
-        Paradoc.navigate('#doc/' + nufile, false);
-        return location.reload();
-      });
-    },
-    doopen: function(ev) {
-      if (this.getthefile()) {
-        Paradoc.navigate('#doc/' + this.thefile, false);
-        return location.reload();
-      }
-    },
-    dopublish: function(ev) {
-      var fname, html;
-      this.thefile = $(".thefile").val();
-      if (this.thefile) {
-        html = publishT({
-          rams: JSON.stringify(Paradoc.paras)
+      this.client.authDriver(new Dropbox.Drivers.Redirect({
+        rememberUser: true
+      }));
+      return this.client.authenticate(function(err, data) {
+        if (err) {
+          alert('error');
+          return;
+        }
+        return self.client.getUserInfo(function(err, userInfo) {
+          return cb(userInfo);
         });
-        fname = this.thefile.replace('.pjs', '') + '.html';
-        console.log(html);
-        return dropio.save(fname, html, function() {
-          console.log('saved');
-          return dropio.geturl(fname, function(url) {
-            return console.log('url is ' + url.url);
-          });
-        });
-      }
+      });
+    },
+    save: function(filename, contents, cb) {
+      return this.client.writeFile(filename, contents, {}, function(err, stat) {
+        if (cb) return cb();
+      });
+    },
+    create: function(filename, cb) {
+      var contents;
+      contents = JSON.stringify(startdb);
+      return this.client.writeFile(filename, contents, {}, function(err, stat) {
+        if (cb) return cb();
+      });
+    },
+    remove: function(filename, cb) {
+      return this.client.remove(filename, function(err, stat) {
+        if (cb) return cb();
+      });
+    },
+    copyto: function(fromfile, tofile, cb) {
+      return this.client.copy(fromfile, tofile, function(err, stat) {
+        if (cb) return cb();
+      });
+    },
+    rename: function(fromfile, tofile, cb) {
+      return this.client.move(fromfile, tofile, function(err, stat) {
+        if (cb) return cb();
+      });
+    },
+    read: function(filename, cb) {
+      return this.client.readFile(filename, {}, function(err, data) {
+        if (err) {
+          console.log('error ' + err.status);
+          return cb(JSON.stringify(startdb));
+        } else {
+          return cb(data);
+        }
+      });
+    },
+    readdir: function(dir, cb) {
+      return this.client.readdir(dir, {}, function(err, data) {
+        if (!data) data = JSON.stringify(data);
+        return cb(data);
+      });
+    },
+    geturl: function(filename, cb) {
+      return this.client.makeUrl(filename, {
+        downloadHack: true
+      }, function(err, data) {
+        return cb(data);
+      });
     }
-  });
+  };
 
 }).call(this);
 
 });
 
-require.define("/filemanager/manager.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<div');
-buf.push(attrs({ "class": ('modal-header') }));
-buf.push('><button');
-buf.push(attrs({ 'type':('button'), 'data-dismiss':('modal'), "class": ('close') }));
-buf.push('>x</button><h3>File Manager</h3></div><div');
-buf.push(attrs({ "class": ('modal-body') }));
-buf.push('><div');
-buf.push(attrs({ "class": ('row-fluid') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('height:250px'), "class": ('span5') }));
-buf.push('><select');
-buf.push(attrs({ 'size':('16'), 'style':('width:100%'), "class": ('thefile') }));
-buf.push('>');
-// iterate flist
-(function(){
-  if ('number' == typeof flist.length) {
-    for (var $index = 0, $$l = flist.length; $index < $$l; $index++) {
-      var f = flist[$index];
+require.define("/db/startdb.coffee", function (require, module, exports, __dirname, __filename) {
 
-buf.push('<option>' + escape((interp = f) == null ? '' : interp) + '</option>');
-    }
-  } else {
-    for (var $index in flist) {
-      var f = flist[$index];
+  module.exports = {
+    "paras": [
+      {
+        "name": "Home",
+        "slug": "home",
+        "contents": "<h4>This is a Pure Jasper document.</h4> It contains many paragraphs that link to each other, can be navigated in tabs and have a mix of text, links, html, widgets and scripts.<br><br><ul><li>To Edit this para:&nbsp;Click edit on the top right of this message box</li><li>To Create a new para:&nbsp;Type `[[Para Name]] (without the backtick)&nbsp;</li><ul><li>This will create a special link which when clicked will open a new para in a tab</li><li>Something like this:&nbsp;<a class=\"paralink\" href=\"#para/about\" data-para=\"about\" title=\"Link: #para/about\">About</a></li></ul></ul>Click on the FileName to bring up the File Manager, which allows you to create new documents etc.<br>"
+      }, {
+        "name": "About",
+        "slug": "about",
+        "contents": "About this document<br><br>edit me or go back <a class=\"paralink\" href=\"#para/home\" data-para=\"home\">Home</a>&nbsp;"
+      }
+    ]
+  };
 
-buf.push('<option>' + escape((interp = f) == null ? '' : interp) + '</option>');
-   }
-  }
-}).call(this);
-
-buf.push('</select></div><div');
-buf.push(attrs({ "class": ('span2') }));
-buf.push('><div');
-buf.push(attrs({ "class": ('btn-group') + ' ' + ('btn-group-vertical') }));
-buf.push('><button');
-buf.push(attrs({ "class": ('btn') }));
-buf.push('><span');
-buf.push(attrs({ "class": ('doopen') }));
-buf.push('>Open</span></button><button');
-buf.push(attrs({ 'style':('margin-top:20px'), "class": ('btn') }));
-buf.push('><span');
-buf.push(attrs({ "class": ('showcopyto') }));
-buf.push('>Copy to</span></button><button');
-buf.push(attrs({ "class": ('btn') }));
-buf.push('><span');
-buf.push(attrs({ "class": ('showrename') }));
-buf.push('>Rename</span></button><button');
-buf.push(attrs({ 'style':('margin-top:20px'), "class": ('btn') }));
-buf.push('><span');
-buf.push(attrs({ "class": ('showdelete') }));
-buf.push('>Delete</span></button><button');
-buf.push(attrs({ 'style':('margin-top:30px'), "class": ('btn') }));
-buf.push('><span');
-buf.push(attrs({ "class": ('shownew') }));
-buf.push('>New File</span></button><button');
-buf.push(attrs({ 'style':('margin-top:30px'), "class": ('btn') }));
-buf.push('><span');
-buf.push(attrs({ "class": ('dopublish') }));
-buf.push('>Publish</span></button></div></div><div');
-buf.push(attrs({ 'style':('height:250px;border:2px solid #ddd;padding-left:2px'), "class": ('span5') + ' ' + ('actionspot') }));
-buf.push('></div></div></div><div');
-buf.push(attrs({ "class": ('modal-footer') }));
-buf.push('><a');
-buf.push(attrs({ 'href':('#'), 'data-dismiss':('modal'), "class": ('btn') }));
-buf.push('>Cancel</a></div>');
-}
-return buf.join("");
-};
-});
-
-require.define("/filemanager/copyto.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<div><h3>Copy To<div><label>From</label><input');
-buf.push(attrs({ 'type':('text'), 'readonly':('true'), 'value':('' + (thefile) + ''), 'style':('width:90%') }));
-buf.push('/></div><div><label>To</label><input');
-buf.push(attrs({ 'type':('text'), 'name':('tofile'), 'placeholder':('filename'), 'style':('width:90%') }));
-buf.push('/></div><div');
-buf.push(attrs({ 'style':('margin:10px;text-align:center') }));
-buf.push('><button');
-buf.push(attrs({ "class": ('docopyto') }));
-buf.push('>Copy</button></div></h3><div');
-buf.push(attrs({ 'style':('color:red;text-align:center'), "class": ('errspot') }));
-buf.push('></div></div>');
-}
-return buf.join("");
-};
-});
-
-require.define("/filemanager/rename.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<div><h3>Rename<div><label>From</label><input');
-buf.push(attrs({ 'type':('text'), 'readonly':('true'), 'value':('' + (thefile) + ''), 'style':('width:90%') }));
-buf.push('/></div><div><label>To</label><input');
-buf.push(attrs({ 'type':('text'), 'name':('tofile'), 'placeholder':('filename'), 'style':('width:90%') }));
-buf.push('/></div><div');
-buf.push(attrs({ 'style':('margin:10px;text-align:center') }));
-buf.push('><button');
-buf.push(attrs({ "class": ('dorename') }));
-buf.push('>rename</button></div></h3><div');
-buf.push(attrs({ 'style':('color:red;text-align:center'), "class": ('errspot') }));
-buf.push('></div></div>');
-}
-return buf.join("");
-};
-});
-
-require.define("/filemanager/delete.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<div><h3>Delete<div><label>File</label><input');
-buf.push(attrs({ 'type':('text'), 'readonly':('true'), 'value':('' + (thefile) + ''), 'style':('width:90%') }));
-buf.push('/></div><div');
-buf.push(attrs({ 'style':('margin:10px;text-align:center') }));
-buf.push('><button');
-buf.push(attrs({ "class": ('dodelete') }));
-buf.push('>Confirm Delete</button></div></h3></div>');
-}
-return buf.join("");
-};
-});
-
-require.define("/filemanager/new.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<div><h3>New File</h3><div><label>File name</label><input');
-buf.push(attrs({ 'type':('text'), 'name':('nufile'), 'placeholder':('filename'), 'style':('width:90%') }));
-buf.push('/></div><div');
-buf.push(attrs({ 'style':('margin:10px;text-align:center') }));
-buf.push('><button');
-buf.push(attrs({ "class": ('donew') }));
-buf.push('>Create & open file</button></div><div');
-buf.push(attrs({ 'style':('color:red;text-align:center'), "class": ('errspot') }));
-buf.push('></div></div>');
-}
-return buf.join("");
-};
-});
-
-require.define("/filemanager/nosel.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<div><h3>Error<div><label>Please select a file</label></div></h3></div>');
-}
-return buf.join("");
-};
-});
-
-require.define("/filemanager/publish.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<html><head><title>PureJasper - Personal wikis</title><link');
-buf.push(attrs({ 'href':("http://purejasper.com/e/bootstrap/css/bootstrap.min.css"), 'rel':("stylesheet"), 'media':("screen") }));
-buf.push('/><link');
-buf.push(attrs({ 'href':("http://purejasper.com/e/css/bootstrap-wysihtml5.css"), 'rel':("stylesheet"), 'media':("screen") }));
-buf.push('/><link');
-buf.push(attrs({ 'rel':("http://purejasper.com/e/stylesheet/less"), 'type':("text/css"), 'href':("./app.less") }));
-buf.push('/><script');
-buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/pjall.js") }));
-buf.push('></script></head><body');
-buf.push(attrs({ 'style':('background-color:#f4f4f4') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('text-align:center') }));
-buf.push('><h1');
-buf.push(attrs({ 'style':('margin:100px auto') }));
-buf.push('>Loading...</h1></div><script>var jdoc = ' + ((interp = rams) == null ? '' : interp) + '\n\n</script><script');
-buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/pjview.js") }));
-buf.push('></script></body></html>');
-}
-return buf.join("");
-};
 });
 
 require.define("/utils/wiki_link.coffee", function (require, module, exports, __dirname, __filename) {
@@ -1590,17 +1129,13 @@ require.define("/utils/utils.coffee", function (require, module, exports, __dirn
 
 });
 
-require.define("/app.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/pjview.coffee", function (require, module, exports, __dirname, __filename) {
     (function() {
-  var AppRouter, WIKI_REGEX, appRouter, dropio, fileactionsM, pageT, paraTabsM, utils, v, wikilink;
+  var AppRouter, WIKI_REGEX, appRouter, pageT, paraTabsM, utils, v, wikilink;
 
   pageT = require('./page');
 
-  dropio = require('./db/dropio');
-
   paraTabsM = require('./paras/paratabs');
-
-  fileactionsM = require('./filemanager/actions');
 
   wikilink = require('./utils/wiki_link');
 
@@ -1613,29 +1148,13 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
     initialize: function() {
       var self;
       self = this;
-      this.filename = this.options.doc;
-      return dropio.read(this.filename, function(data) {
-        var jdoc;
-        JSON.parse(data);
-        try {
-          jdoc = JSON.parse(data);
-        } catch (e) {
-          console.log('bad data');
-          jdoc = {
-            paras: []
-          };
-        }
-        if (jdoc['rams']) {
-          Paradoc.paras = new Backbone.Collection(jdoc['rams']);
-        } else {
-          Paradoc.paras = new Backbone.Collection(jdoc['paras']);
-        }
-        Paradoc.paras.each(function(m) {
-          if (!m.get("slug")) return m.set("slug", utils.slugify(m.get("name")));
-        });
-        Paradoc.doc = self.filename;
-        return self.render();
+      this.filename = "";
+      Paradoc.paras = new Backbone.Collection(jdoc['paras']);
+      Paradoc.paras.each(function(m) {
+        if (!m.get("slug")) return m.set("slug", utils.slugify(m.get("name")));
       });
+      Paradoc.doc = self.filename;
+      return self.render();
     },
     events: {
       "click .paralink": "doparalink"
@@ -1648,7 +1167,7 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
       return ev.preventDefault();
     },
     render: function() {
-      var fa, h, self, w;
+      var h, self, w;
       self = this;
       h = $(window).height() - 150;
       if (h < 150) h = 150;
@@ -1658,10 +1177,6 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
         w: w,
         doc: Paradoc.doc
       }));
-      $("#user-name").text(Paradoc.userInfo.name);
-      fa = new fileactionsM({
-        filename: this.filename
-      });
       Paradoc.paratabs = new paraTabsM({
         parent: $(".paratabs", self.el)
       });
@@ -1695,7 +1210,7 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
     window.Paradoc = {
       ext: "pjs",
       init: function() {
-        return this.readonly = false;
+        return this.readonly = true;
       },
       navigate: function(path, trigger) {
         if (trigger == null) trigger = true;
@@ -1721,18 +1236,14 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
             });
           }
         });
-      },
-      dropio: dropio
+      }
     };
     window.Paradoc.init();
-    return dropio.start(function(userInfo) {
-      Paradoc.userInfo = userInfo;
-      return Backbone.history.start();
-    });
+    return Backbone.history.start();
   });
 
 }).call(this);
 
 });
-require("/app.coffee");
+require("/pjview.coffee");
 
