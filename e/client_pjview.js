@@ -484,7 +484,7 @@ buf.push(attrs({ 'style':('text-align:left;background-color:#ffffff;padding:0px 
 buf.push('><div');
 buf.push(attrs({ 'style':('color:#cccccc'), "class": ('pull-right') + ' ' + ('paraactions') }));
 buf.push('></div><div');
-buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('paracontents') }));
+buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px;overflow:auto'), "class": ('paracontents') }));
 buf.push('><div');
 buf.push(attrs({ 'style':('padding:4px 6px'), "class": ('htmlarea') }));
 buf.push('></div><div');
@@ -696,9 +696,11 @@ return buf.join("");
 
 require.define("/paras/onepara.coffee", function (require, module, exports, __dirname, __filename) {
 (function() {
-  var oneParaT, oneParaactionsM;
+  var basicPM, oneParaT, oneParaactionsM;
 
   oneParaT = require('./onepara.jade');
+
+  basicPM = require('../plugins/basic');
 
   oneParaactionsM = require('./oneparaactions');
 
@@ -710,20 +712,17 @@ require.define("/paras/onepara.coffee", function (require, module, exports, __di
       "dblclick": "doedit"
     },
     render: function() {
-      var self;
+      var p, self, x;
       self = this;
-      /*
-              h = $(window).height() - 150
-              if h< 150
-                  h = 150
-              w = $(".container.main").width()
-              $(this.el).html(oneParaT({
-                  h: h
-                  w: w
-              }))
-              $(".paraview").html(this.el)
-      */
-      $(".htmlarea").html(this.gethtml());
+      if (this.model.get("plugin")) {
+        x = 1;
+        console.log('xx');
+      } else {
+        p = new basicPM({
+          model: this.model,
+          parent: $(".htmlarea")
+        });
+      }
       return this.ora = new oneParaactionsM({
         model: this.model,
         paraview: this
@@ -736,12 +735,6 @@ require.define("/paras/onepara.coffee", function (require, module, exports, __di
       var text;
       text = this.model.get("contents");
       return text;
-    },
-    xgethtml: function() {
-      var converter, html;
-      converter = new Showdown.converter();
-      html = converter.makeHtml(text);
-      return html;
     },
     showedit: function() {
       var h;
@@ -793,6 +786,24 @@ buf.push('></textarea></div></div></div></div>');
 }
 return buf.join("");
 };
+});
+
+require.define("/plugins/basic.coffee", function (require, module, exports, __dirname, __filename) {
+
+  module.exports = Backbone.View.extend({
+    initialize: function() {
+      return this.render();
+    },
+    render: function() {
+      return $(this.options.parent).html(this.gethtml());
+    },
+    gethtml: function() {
+      var text;
+      text = this.model.get("contents");
+      return text;
+    }
+  });
+
 });
 
 require.define("/paras/oneparaactions.coffee", function (require, module, exports, __dirname, __filename) {
@@ -1028,7 +1039,7 @@ require.define("/db/dropio.coffee", function (require, module, exports, __dirnam
         long: true,
         downloadHack: true
       }, function(err, data) {
-        return cb(data);
+        return cb(err, data);
       });
     }
   };
