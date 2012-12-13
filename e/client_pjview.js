@@ -1,5 +1,5 @@
-
-var jade = (function(exports){
+(function(){
+jade = (function(exports){
 /*!
  * Jade - runtime
  * Copyright(c) 2010 TJ Holowaychuk <tj@vision-media.ca>
@@ -29,41 +29,97 @@ if (!Object.keys) {
       }
     }
     return arr;
-  } 
+  }
+}
+
+/**
+ * Merge two attribute objects giving precedence
+ * to values in object `b`. Classes are special-cased
+ * allowing for arrays and merging/joining appropriately
+ * resulting in a string.
+ *
+ * @param {Object} a
+ * @param {Object} b
+ * @return {Object} a
+ * @api private
+ */
+
+exports.merge = function merge(a, b) {
+  var ac = a['class'];
+  var bc = b['class'];
+
+  if (ac || bc) {
+    ac = ac || [];
+    bc = bc || [];
+    if (!Array.isArray(ac)) ac = [ac];
+    if (!Array.isArray(bc)) bc = [bc];
+    ac = ac.filter(nulls);
+    bc = bc.filter(nulls);
+    a['class'] = ac.concat(bc).join(' ');
+  }
+
+  for (var key in b) {
+    if (key != 'class') {
+      a[key] = b[key];
+    }
+  }
+
+  return a;
+};
+
+/**
+ * Filter null `val`s.
+ *
+ * @param {Mixed} val
+ * @return {Mixed}
+ * @api private
+ */
+
+function nulls(val) {
+  return val != null;
 }
 
 /**
  * Render the given attributes object.
  *
  * @param {Object} obj
+ * @param {Object} escaped
  * @return {String}
  * @api private
  */
 
-exports.attrs = function attrs(obj){
+exports.attrs = function attrs(obj, escaped){
   var buf = []
     , terse = obj.terse;
+
   delete obj.terse;
   var keys = Object.keys(obj)
     , len = keys.length;
+
   if (len) {
     buf.push('');
     for (var i = 0; i < len; ++i) {
       var key = keys[i]
         , val = obj[key];
+
       if ('boolean' == typeof val || null == val) {
         if (val) {
           terse
             ? buf.push(key)
             : buf.push(key + '="' + key + '"');
         }
+      } else if (0 == key.indexOf('data') && 'string' != typeof val) {
+        buf.push(key + "='" + JSON.stringify(val) + "'");
       } else if ('class' == key && Array.isArray(val)) {
         buf.push(key + '="' + exports.escape(val.join(' ')) + '"');
-      } else {
+      } else if (escaped && escaped[key]) {
         buf.push(key + '="' + exports.escape(val) + '"');
+      } else {
+        buf.push(key + '="' + val + '"');
       }
     }
   }
+
   return buf.join(' ');
 };
 
@@ -77,7 +133,7 @@ exports.attrs = function attrs(obj){
 
 exports.escape = function escape(html){
   return String(html)
-    .replace(/&(?!\w+;)/g, '&amp;')
+    .replace(/&(?!(\w+|\#\d+);)/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
@@ -100,7 +156,7 @@ exports.rethrow = function rethrow(err, filename, lineno){
     , str = require('fs').readFileSync(filename, 'utf8')
     , lines = str.split('\n')
     , start = Math.max(lineno - context, 0)
-    , end = Math.min(lines.length, lineno + context); 
+    , end = Math.min(lines.length, lineno + context);
 
   // Error context
   var context = lines.slice(start, end).map(function(line, i){
@@ -113,7 +169,7 @@ exports.rethrow = function rethrow(err, filename, lineno){
 
   // Alter exception message
   err.path = filename;
-  err.message = (filename || 'Jade') + ':' + lineno 
+  err.message = (filename || 'Jade') + ':' + lineno
     + '\n' + context + '\n\n' + err.message;
   throw err;
 };
@@ -121,19 +177,22 @@ exports.rethrow = function rethrow(err, filename, lineno){
   return exports;
 
 })({});
+
 var require = function (file, cwd) {
     var resolved = require.resolve(file, cwd || '/');
     var mod = require.modules[resolved];
     if (!mod) throw new Error(
         'Failed to resolve module ' + file + ', tried ' + resolved
     );
-    var res = mod._cached ? mod._cached : mod();
+    var cached = require.cache[resolved];
+    var res = cached? cached.exports : mod();
     return res;
-}
+};
 
 require.paths = [];
 require.modules = {};
-require.extensions = [".js",".coffee",".jade"];
+require.cache = {};
+require.extensions = [".js",".coffee",".json",".jade"];
 
 require._core = {
     'assert': true,
@@ -149,7 +208,8 @@ require.resolve = (function () {
         
         if (require._core[x]) return x;
         var path = require.modules.path();
-        var y = cwd || '.';
+        cwd = path.resolve('/', cwd);
+        var y = cwd || '/';
         
         if (x.match(/^(?:\.\.?\/|\/)/)) {
             var m = loadAsFileSync(path.resolve(y, x))
@@ -163,6 +223,7 @@ require.resolve = (function () {
         throw new Error("Cannot find module '" + x + "'");
         
         function loadAsFileSync (x) {
+            x = path.normalize(x);
             if (require.modules[x]) {
                 return x;
             }
@@ -175,7 +236,7 @@ require.resolve = (function () {
         
         function loadAsDirectorySync (x) {
             x = x.replace(/\/+$/, '');
-            var pkgfile = x + '/package.json';
+            var pkgfile = path.normalize(x + '/package.json');
             if (require.modules[pkgfile]) {
                 var pkg = require.modules[pkgfile]();
                 var b = pkg.browserify;
@@ -240,7 +301,7 @@ require.alias = function (from, to) {
     
     var keys = (Object.keys || function (obj) {
         var res = [];
-        for (var key in obj) res.push(key)
+        for (var key in obj) res.push(key);
         return res;
     })(require.modules);
     
@@ -256,77 +317,66 @@ require.alias = function (from, to) {
     }
 };
 
-require.define = function (filename, fn) {
-    var dirname = require._core[filename]
-        ? ''
-        : require.modules.path().dirname(filename)
-    ;
+(function () {
+    var process = {};
+    var global = typeof window !== 'undefined' ? window : {};
+    var definedProcess = false;
     
-    var require_ = function (file) {
-        return require(file, dirname)
-    };
-    require_.resolve = function (name) {
-        return require.resolve(name, dirname);
-    };
-    require_.modules = require.modules;
-    require_.define = require.define;
-    var module_ = { exports : {} };
-    
-    require.modules[filename] = function () {
-        require.modules[filename]._cached = module_.exports;
-        fn.call(
-            module_.exports,
-            require_,
-            module_,
-            module_.exports,
-            dirname,
-            filename
-        );
-        require.modules[filename]._cached = module_.exports;
-        return module_.exports;
-    };
-};
-
-if (typeof process === 'undefined') process = {};
-
-if (!process.nextTick) process.nextTick = (function () {
-    var queue = [];
-    var canPost = typeof window !== 'undefined'
-        && window.postMessage && window.addEventListener
-    ;
-    
-    if (canPost) {
-        window.addEventListener('message', function (ev) {
-            if (ev.source === window && ev.data === 'browserify-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
-            }
-        }, true);
-    }
-    
-    return function (fn) {
-        if (canPost) {
-            queue.push(fn);
-            window.postMessage('browserify-tick', '*');
+    require.define = function (filename, fn) {
+        if (!definedProcess && require.modules.__browserify_process) {
+            process = require.modules.__browserify_process();
+            definedProcess = true;
         }
-        else setTimeout(fn, 0);
+        
+        var dirname = require._core[filename]
+            ? ''
+            : require.modules.path().dirname(filename)
+        ;
+        
+        var require_ = function (file) {
+            var requiredModule = require(file, dirname);
+            var cached = require.cache[require.resolve(file, dirname)];
+
+            if (cached && cached.parent === null) {
+                cached.parent = module_;
+            }
+
+            return requiredModule;
+        };
+        require_.resolve = function (name) {
+            return require.resolve(name, dirname);
+        };
+        require_.modules = require.modules;
+        require_.define = require.define;
+        require_.cache = require.cache;
+        var module_ = {
+            id : filename,
+            filename: filename,
+            exports : {},
+            loaded : false,
+            parent: null
+        };
+        
+        require.modules[filename] = function () {
+            require.cache[filename] = module_;
+            fn.call(
+                module_.exports,
+                require_,
+                module_,
+                module_.exports,
+                dirname,
+                filename,
+                process,
+                global
+            );
+            module_.loaded = true;
+            return module_.exports;
+        };
     };
 })();
 
-if (!process.title) process.title = 'browser';
 
-if (!process.binding) process.binding = function (name) {
-    if (name === 'evals') return require('vm')
-    else throw new Error('No such module')
-};
-
-if (!process.cwd) process.cwd = function () { return '.' };
-
-require.define("path", function (require, module, exports, __dirname, __filename) {
-function filter (xs, fn) {
+require.define("path",function(require,module,exports,__dirname,__filename,process,global){function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
         if (fn(xs[i], i, xs)) res.push(xs[i]);
@@ -463,48 +513,80 @@ exports.extname = function(path) {
 
 });
 
-require.define("/page.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+require.define("__browserify_process",function(require,module,exports,__dirname,__filename,process,global){var process = module.exports = {};
+
+process.nextTick = (function () {
+    var canSetImmediate = typeof window !== 'undefined'
+        && window.setImmediate;
+    var canPost = typeof window !== 'undefined'
+        && window.postMessage && window.addEventListener
+    ;
+
+    if (canSetImmediate) {
+        return function (f) { return window.setImmediate(f) };
+    }
+
+    if (canPost) {
+        var queue = [];
+        window.addEventListener('message', function (ev) {
+            if (ev.source === window && ev.data === 'browserify-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+
+        return function nextTick(fn) {
+            queue.push(fn);
+            window.postMessage('browserify-tick', '*');
+        };
+    }
+
+    return function nextTick(fn) {
+        setTimeout(fn, 0);
+    };
+})();
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+
+process.binding = function (name) {
+    if (name === 'evals') return (require)('vm')
+    else throw new Error('No such module. (Possibly not yet loaded)')
+};
+
+(function () {
+    var cwd = '/';
+    var path;
+    process.cwd = function () { return cwd };
+    process.chdir = function (dir) {
+        if (!path) path = require('path');
+        cwd = path.resolve(dir, cwd);
+    };
+})();
+
+});
+
+require.define("/page.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<div');
-buf.push(attrs({ "class": ('container') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('position:relative'), "class": ('menubar') }));
-buf.push('></div><div');
-buf.push(attrs({ 'style':('margin-top:30px'), "class": ('main') }));
-buf.push('><div');
-buf.push(attrs({ "class": ('paratabs') }));
-buf.push('></div><div');
-buf.push(attrs({ "class": ('paraview') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd'), "class": ('paraonpage') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('color:#cccccc'), "class": ('pull-right') + ' ' + ('paraactions') }));
-buf.push('></div><div');
-buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px;overflow:auto'), "class": ('paracontents') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('padding:4px 6px'), "class": ('htmlarea') }));
-buf.push('></div><div');
-buf.push(attrs({ 'style':('display:none'), "class": ('editspot') }));
-buf.push('><textarea');
-buf.push(attrs({ 'style':('width:100%;height:' + (h-10) + 'px;'), "class": ('editarea') }));
-buf.push('></textarea></div></div></div></div><div');
-buf.push(attrs({ 'style':('text-align:center') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('color:#ccc;margin-top:20px;letter-spacing:3px') }));
-buf.push('>&copy; 2013 purejasper.com</div></div></div></div><div');
-buf.push(attrs({ 'style':('display:none'), "class": ('modal') + ' ' + ('ymodal') }));
-buf.push('></div>');
+buf.push('<div class="container"><div style="position:relative" class="menubar"></div><div style="margin-top:30px" class="main"><div class="paratabs"></div><div class="paraview"><div style="text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd" class="paraonpage"><div style="color:#cccccc" class="pull-right paraactions"></div><div');
+buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px;overflow:auto'), "class": ('paracontents') }, {"style":true}));
+buf.push('> <div style="padding:4px 6px" class="htmlarea"></div><div style="display:none" class="editspot"><textarea');
+buf.push(attrs({ 'style':('width:100%;height:' + (h-10) + 'px;'), "class": ('editarea') }, {"style":true}));
+buf.push('></textarea></div></div></div></div><div style="text-align:center"><div style="color:#ccc;margin-top:20px;letter-spacing:3px">&copy; 2013 purejasper.com</div></div></div></div><div style="display:none" class="modal ymodal"></div>');
 }
 return buf.join("");
 };
 });
 
-require.define("/paras/paratabs.coffee", function (require, module, exports, __dirname, __filename) {
-(function() {
+require.define("/paras/paratabs.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
   var oneParaM, paraTabsT;
 
   paraTabsT = require('./paratabs.jade');
@@ -531,13 +613,16 @@ require.define("/paras/paratabs.coffee", function (require, module, exports, __d
           });
         }
       });
-      if (self.tabsonpage.length === 0) self.tabsonpage = ["Home", "About"];
+      if (self.tabsonpage.length === 0) {
+        self.tabsonpage = ["Home", "About"];
+      }
       /*
               $(this.el).html(paraTabsT({
                   tabs: self.tabsonpage
               }))
               $(this.options.parent).append(this.el)
       */
+
       this.painttabs();
       paraname = "Home";
       return Paradoc.paras.each(function(m) {
@@ -549,12 +634,14 @@ require.define("/paras/paratabs.coffee", function (require, module, exports, __d
       });
     },
     painttabs: function(activepara) {
-      var activetab, i, t, _len, _ref;
+      var activetab, i, t, _i, _len, _ref;
       if (activepara) {
         _ref = this.tabsonpage;
-        for (i = 0, _len = _ref.length; i < _len; i++) {
+        for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
           t = _ref[i];
-          if (t === activepara) activetab = i;
+          if (t === activepara) {
+            activetab = i;
+          }
         }
       } else {
         activetab = 0;
@@ -568,7 +655,9 @@ require.define("/paras/paratabs.coffee", function (require, module, exports, __d
     },
     doparatab: function(ev) {
       var paraname;
-      if (Paradoc.isediting) return;
+      if (Paradoc.isediting) {
+        return;
+      }
       $(".paratabwrap").removeClass("active");
       $(ev.target).closest(".paratabwrap").addClass('active');
       paraname = $(ev.target).attr('data-paraname');
@@ -588,7 +677,9 @@ require.define("/paras/paratabs.coffee", function (require, module, exports, __d
       mrs = Paradoc.paras.where({
         slug: paraslug
       });
-      if (mrs) para = mrs[0];
+      if (mrs) {
+        para = mrs[0];
+      }
       if (!para) {
         console.log('no para');
         m = new Backbone.Model({
@@ -609,10 +700,10 @@ require.define("/paras/paratabs.coffee", function (require, module, exports, __d
       }
     },
     rmatab: function(paraname) {
-      var i, t, _len, _ref, _results;
+      var i, t, _i, _len, _ref, _results;
       _ref = this.tabsonpage;
       _results = [];
-      for (i = 0, _len = _ref.length; i < _len; i++) {
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         t = _ref[i];
         if (t === paraname) {
           $(".paratab[data-paraname='" + this.tabsonpage[i - 1] + "']").click();
@@ -630,61 +721,52 @@ require.define("/paras/paratabs.coffee", function (require, module, exports, __d
 
 });
 
-require.define("/paras/paratabs.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+require.define("/paras/paratabs.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<div');
-buf.push(attrs({ 'style':('margin-top:2px') }));
-buf.push('><ul');
-buf.push(attrs({ 'style':('margin-bottom:0px'), "class": ('nav') + ' ' + ('nav-tabs') + ' ' + ('paratabmom') }));
-buf.push('>');
+buf.push('<div style="margin-top:2px"><ul style="margin-bottom:0px" class="nav nav-tabs paratabmom">');
 // iterate tabs
-(function(){
+;(function(){
   if ('number' == typeof tabs.length) {
+
     for (var i = 0, $$l = tabs.length; i < $$l; i++) {
       var tab = tabs[i];
 
 if ( i === activetab)
 {
-buf.push('<li');
-buf.push(attrs({ "class": ('active') + ' ' + ('paratabwrap') }));
-buf.push('><a');
-buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
-buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
+buf.push('<li class="active paratabwrap"><a');
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }, {"data-paraname":true}));
+buf.push('>' + escape((interp = tab) == null ? '' : interp) + '</a></li>');
 }
 else
 {
-buf.push('<li');
-buf.push(attrs({ "class": ('paratabwrap') }));
-buf.push('><a');
-buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
-buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
+buf.push('<li class="paratabwrap"><a');
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }, {"data-paraname":true}));
+buf.push('>' + escape((interp = tab) == null ? '' : interp) + '</a></li>');
 }
     }
+
   } else {
+    var $$l = 0;
     for (var i in tabs) {
-      var tab = tabs[i];
+      $$l++;      var tab = tabs[i];
 
 if ( i === activetab)
 {
-buf.push('<li');
-buf.push(attrs({ "class": ('active') + ' ' + ('paratabwrap') }));
-buf.push('><a');
-buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
-buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
+buf.push('<li class="active paratabwrap"><a');
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }, {"data-paraname":true}));
+buf.push('>' + escape((interp = tab) == null ? '' : interp) + '</a></li>');
 }
 else
 {
-buf.push('<li');
-buf.push(attrs({ "class": ('paratabwrap') }));
-buf.push('><a');
-buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
-buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
+buf.push('<li class="paratabwrap"><a');
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }, {"data-paraname":true}));
+buf.push('>' + escape((interp = tab) == null ? '' : interp) + '</a></li>');
 }
-   }
+    }
+
   }
 }).call(this);
 
@@ -694,8 +776,7 @@ return buf.join("");
 };
 });
 
-require.define("/paras/onepara.coffee", function (require, module, exports, __dirname, __filename) {
-(function() {
+require.define("/paras/onepara.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
   var basicPM, oneParaT, oneParaactionsM;
 
   oneParaT = require('./onepara.jade');
@@ -764,31 +845,22 @@ require.define("/paras/onepara.coffee", function (require, module, exports, __di
 
 });
 
-require.define("/paras/onepara.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+require.define("/paras/onepara.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<div><div');
-buf.push(attrs({ 'style':('text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd'), "class": ('paraonpage') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('color:#cccccc'), "class": ('pull-right') + ' ' + ('paraactions') }));
-buf.push('></div><div');
-buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('paracontents') }));
-buf.push('><div');
-buf.push(attrs({ 'style':('padding:4px 6px'), "class": ('htmlarea') }));
-buf.push('></div><div');
-buf.push(attrs({ 'style':('display:none'), "class": ('editspot') }));
-buf.push('><textarea');
-buf.push(attrs({ 'style':('width:100%;height:' + (h-10) + 'px;'), "class": ('editarea') }));
+buf.push('<div><div style="text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd" class="paraonpage"><div style="color:#cccccc" class="pull-right paraactions"></div><div');
+buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('paracontents') }, {"style":true}));
+buf.push('> <div style="padding:4px 6px" class="htmlarea"></div><div style="display:none" class="editspot"><textarea');
+buf.push(attrs({ 'style':('width:100%;height:' + (h-10) + 'px;'), "class": ('editarea') }, {"style":true}));
 buf.push('></textarea></div></div></div></div>');
 }
 return buf.join("");
 };
 });
 
-require.define("/plugins/basic.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/plugins/basic.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
 
   module.exports = Backbone.View.extend({
     initialize: function() {
@@ -804,10 +876,11 @@ require.define("/plugins/basic.coffee", function (require, module, exports, __di
     }
   });
 
+}).call(this);
+
 });
 
-require.define("/paras/oneparaactions.coffee", function (require, module, exports, __dirname, __filename) {
-(function() {
+require.define("/paras/oneparaactions.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
   var dropio, oneParaactionsRoT, oneParaactionsT;
 
   oneParaactionsT = require('./oneparaactions.jade');
@@ -898,65 +971,41 @@ require.define("/paras/oneparaactions.coffee", function (require, module, export
 
 });
 
-require.define("/paras/oneparaactions.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+require.define("/paras/oneparaactions.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<div');
-buf.push(attrs({ "class": ('editgroup') }));
-buf.push('><span');
-buf.push(attrs({ "class": ('doedit') + ' ' + ('pointer') + ' ' + ('word') }));
-buf.push('>edit</span>');
+buf.push('<div class="editgroup"><span class="doedit pointer word">edit</span>');
 if ( para.slug != 'home')
 {
-buf.push('<span');
-buf.push(attrs({ "class": ('doclose') + ' ' + ('pointer') + ' ' + ('word') }));
-buf.push('>close</span>');
+buf.push('<span class="doclose pointer word">close</span>');
 }
-buf.push('</div><div');
-buf.push(attrs({ 'style':('display:none'), "class": ('savegroup') }));
-buf.push('>');
+buf.push('</div><div style="display:none" class="savegroup">');
 if ( para.slug != 'home')
 {
-buf.push('<span');
-buf.push(attrs({ 'style':('color:red;padding-right:15px'), "class": ('dodel') + ' ' + ('pointer') }));
-buf.push('>delete</span>');
+buf.push('<span style="color:red;padding-right:15px" class="dodel pointer">delete</span>');
 }
-buf.push('<span');
-buf.push(attrs({ "class": ('dosave') + ' ' + ('pointer') + ' ' + ('word') }));
-buf.push('>save</span><span');
-buf.push(attrs({ "class": ('doxncl') + ' ' + ('pointer') + ' ' + ('word') }));
-buf.push('>cancel</span></div>');
+buf.push('<span class="dosave pointer word">save</span><span class="doxncl pointer word">cancel</span></div>');
 }
 return buf.join("");
 };
 });
 
-require.define("/paras/oneparaactions-ro.jade", function (require, module, exports, __dirname, __filename) {
-module.exports = function anonymous(locals, attrs, escape, rethrow) {
-var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+require.define("/paras/oneparaactions-ro.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<div');
-buf.push(attrs({ "class": ('editgroup') }));
-buf.push('>');
+buf.push('<div class="editgroup">');
 if ( para.slug != 'home')
 {
-buf.push('<span');
-buf.push(attrs({ "class": ('doclose') + ' ' + ('pointer') + ' ' + ('word') }));
-buf.push('>close</span>');
+buf.push('<span class="doclose pointer word">close</span>');
 }
-buf.push('</div><div');
-buf.push(attrs({ 'style':('display:none'), "class": ('savegroup') }));
-buf.push('>');
+buf.push('</div><div style="display:none" class="savegroup">');
 if ( para.slug != 'home')
 {
-buf.push('<span');
-buf.push(attrs({ "class": ('doclose') + ' ' + ('pointer') + ' ' + ('word') }));
-buf.push('>close</span>');
+buf.push('<span class="doclose pointer word">close</span>');
 }
 buf.push('</div>');
 }
@@ -964,8 +1013,7 @@ return buf.join("");
 };
 });
 
-require.define("/db/dropio.coffee", function (require, module, exports, __dirname, __filename) {
-(function() {
+require.define("/db/dropio.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
   var startdb;
 
   startdb = require('./startdb');
@@ -993,29 +1041,39 @@ require.define("/db/dropio.coffee", function (require, module, exports, __dirnam
     },
     save: function(filename, contents, cb) {
       return this.client.writeFile(filename, contents, {}, function(err, stat) {
-        if (cb) return cb();
+        if (cb) {
+          return cb();
+        }
       });
     },
     create: function(filename, cb) {
       var contents;
       contents = JSON.stringify(startdb);
       return this.client.writeFile(filename, contents, {}, function(err, stat) {
-        if (cb) return cb();
+        if (cb) {
+          return cb();
+        }
       });
     },
     remove: function(filename, cb) {
       return this.client.remove(filename, function(err, stat) {
-        if (cb) return cb();
+        if (cb) {
+          return cb();
+        }
       });
     },
     copyto: function(fromfile, tofile, cb) {
       return this.client.copy(fromfile, tofile, function(err, stat) {
-        if (cb) return cb();
+        if (cb) {
+          return cb();
+        }
       });
     },
     rename: function(fromfile, tofile, cb) {
       return this.client.move(fromfile, tofile, function(err, stat) {
-        if (cb) return cb();
+        if (cb) {
+          return cb();
+        }
       });
     },
     read: function(filename, cb) {
@@ -1030,7 +1088,9 @@ require.define("/db/dropio.coffee", function (require, module, exports, __dirnam
     },
     readdir: function(dir, cb) {
       return this.client.readdir(dir, {}, function(err, data) {
-        if (!data) data = JSON.stringify(data);
+        if (!data) {
+          data = JSON.stringify(data);
+        }
         return cb(data);
       });
     },
@@ -1048,7 +1108,7 @@ require.define("/db/dropio.coffee", function (require, module, exports, __dirnam
 
 });
 
-require.define("/db/startdb.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/db/startdb.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
 
   module.exports = {
     "paras": [
@@ -1064,10 +1124,11 @@ require.define("/db/startdb.coffee", function (require, module, exports, __dirna
     ]
   };
 
+}).call(this);
+
 });
 
-require.define("/utils/wiki_link.coffee", function (require, module, exports, __dirname, __filename) {
-(function() {
+require.define("/utils/wiki_link.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
   var WIKI_REGEX, utils, _convertWikiLink, _getTempElement, _parseNode, _wrapMatchesInNode;
 
   utils = require('./utils');
@@ -1129,7 +1190,7 @@ require.define("/utils/wiki_link.coffee", function (require, module, exports, __
 
 });
 
-require.define("/utils/utils.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/utils/utils.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
 
   module.exports.slugify = function(text) {
     text = text.replace(/[^-a-zA-Z0-9,&\s]+/ig, '');
@@ -1139,10 +1200,11 @@ require.define("/utils/utils.coffee", function (require, module, exports, __dirn
     return text;
   };
 
+}).call(this);
+
 });
 
-require.define("/pjview.coffee", function (require, module, exports, __dirname, __filename) {
-    (function() {
+require.define("/pjview.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
   var AppRouter, WIKI_REGEX, appRouter, pageT, paraTabsM, utils, v, wikilink;
 
   pageT = require('./page');
@@ -1163,7 +1225,9 @@ require.define("/pjview.coffee", function (require, module, exports, __dirname, 
       this.filename = "";
       Paradoc.paras = new Backbone.Collection(jdoc['paras']);
       Paradoc.paras.each(function(m) {
-        if (!m.get("slug")) return m.set("slug", utils.slugify(m.get("name")));
+        if (!m.get("slug")) {
+          return m.set("slug", utils.slugify(m.get("name")));
+        }
       });
       Paradoc.doc = self.filename;
       return self.render();
@@ -1182,7 +1246,9 @@ require.define("/pjview.coffee", function (require, module, exports, __dirname, 
       var h, self, w;
       self = this;
       h = $(window).height() - 150;
-      if (h < 150) h = 150;
+      if (h < 150) {
+        h = 150;
+      }
       w = $(".container.main").width();
       $(self.el).html(pageT({
         h: h,
@@ -1205,8 +1271,12 @@ require.define("/pjview.coffee", function (require, module, exports, __dirname, 
     },
     home: function(doc) {
       var mainV;
-      if (!doc) doc = 'notes.pjs';
-      if (doc.indexOf('.pjs') === -1) doc = doc + '.pjs';
+      if (!doc) {
+        doc = 'notes.pjs';
+      }
+      if (doc.indexOf('.pjs') === -1) {
+        doc = doc + '.pjs';
+      }
       return mainV = new v({
         doc: doc
       });
@@ -1225,7 +1295,9 @@ require.define("/pjview.coffee", function (require, module, exports, __dirname, 
         return this.readonly = true;
       },
       navigate: function(path, trigger) {
-        if (trigger == null) trigger = true;
+        if (trigger == null) {
+          trigger = true;
+        }
         return appRouter.navigate(path, {
           trigger: trigger
         });
@@ -1258,4 +1330,5 @@ require.define("/pjview.coffee", function (require, module, exports, __dirname, 
 
 });
 require("/pjview.coffee");
+})();
 
