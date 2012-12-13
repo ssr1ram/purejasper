@@ -1025,6 +1025,7 @@ require.define("/db/dropio.coffee", function (require, module, exports, __dirnam
     },
     geturl: function(filename, cb) {
       return this.client.makeUrl(filename, {
+        long: true,
         downloadHack: true
       }, function(err, data) {
         return cb(data);
@@ -1222,7 +1223,7 @@ require.define("/pjview.coffee", function (require, module, exports, __dirname, 
         var self;
         self = this;
         this.editor = $('.editarea').wysihtml5({
-          stylesheets: ["bootstrap/css/bootstrap.min.css"]
+          stylesheets: ["http://purejasper.com/e/bootstrap/css/bootstrap.min.css"]
         }).data("wysihtml5").editor;
         return this.editor.on('newword:composer', function() {
           var composer, edittext, matches;

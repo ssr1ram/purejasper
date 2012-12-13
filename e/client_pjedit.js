@@ -575,6 +575,7 @@ require.define("/db/dropio.coffee", function (require, module, exports, __dirnam
     },
     geturl: function(filename, cb) {
       return this.client.makeUrl(filename, {
+        long: true,
         downloadHack: true
       }, function(err, data) {
         return cb(data);
@@ -1164,9 +1165,14 @@ require.define("/filemanager/manager.coffee", function (require, module, exports
       var self;
       self = this;
       return dropio.readdir("/", function(flist) {
-        self.flist = flist;
+        var f, _i, _len;
+        self.flist = [];
+        for (_i = 0, _len = flist.length; _i < _len; _i++) {
+          f = flist[_i];
+          if (f.indexOf('.pjs') !== -1) self.flist.push(f);
+        }
         $(self.el).html(managerT({
-          flist: flist
+          flist: self.flist
         }));
         self.delegateEvents();
         $(".ymodal").empty().html(self.el).show();
@@ -1295,11 +1301,14 @@ require.define("/filemanager/manager.coffee", function (require, module, exports
       }
     },
     dopublish: function(ev) {
-      var fname, html;
+      var d, fname, html;
       this.thefile = $(".thefile").val();
       if (this.thefile) {
+        d = {
+          paras: Paradoc.paras.toJSON()
+        };
         html = publishT({
-          rams: JSON.stringify(Paradoc.paras)
+          paras: JSON.stringify(d)
         });
         fname = this.thefile.replace('.pjs', '') + '.html';
         console.log(html);
@@ -1500,15 +1509,31 @@ buf.push(attrs({ 'href':("http://purejasper.com/e/css/bootstrap-wysihtml5.css"),
 buf.push('/><link');
 buf.push(attrs({ 'rel':("http://purejasper.com/e/stylesheet/less"), 'type':("text/css"), 'href':("./app.less") }));
 buf.push('/><script');
-buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/pjall.js") }));
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/underscore-min.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/dropbox.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/wysihtml5-0.3.0.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/jquery.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/backbone-min.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/bootstrap/js/bootstrap.min.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/less.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/showdown.js") }));
+buf.push('></script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/lib/bs-wysi5.js") }));
 buf.push('></script></head><body');
 buf.push(attrs({ 'style':('background-color:#f4f4f4') }));
 buf.push('><div');
 buf.push(attrs({ 'style':('text-align:center') }));
 buf.push('><h1');
 buf.push(attrs({ 'style':('margin:100px auto') }));
-buf.push('>Loading...</h1></div><script>var jdoc = ' + ((interp = rams) == null ? '' : interp) + '\n\n</script><script');
-buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/pjview.js") }));
+buf.push('>Loading...</h1></div><script>var jdoc = ' + ((interp = paras) == null ? '' : interp) + ';\n\n</script><script');
+buf.push(attrs({ 'type':("text/javascript"), 'src':("http://purejasper.com/e/client_pjview.js") }));
 buf.push('></script></body></html>');
 }
 return buf.join("");
