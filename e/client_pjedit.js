@@ -586,7 +586,7 @@ require.define("/db/startdb.coffee", function (require, module, exports, __dirna
       {
         "name": "Home",
         "slug": "home",
-        "contents": "<h4>This is a Pure Jasper document.</h4> It contains many Richly Annotated&nbsp;fragMents (Rams) that link to each other, can be navigated in tabs and have a mix of text, links, html, widgets and scripts.<br><br><ul><li>To Edit this Ram:&nbsp;Click edit on the top right of this message box</li><li>To Create a new Ram:&nbsp;Type `[[Fragment Name]] (without the backtick)&nbsp;</li><ul><li>This will create a special link which when clicked will open a new Ram in a tab</li><li>Something like this:&nbsp;<a class=\"ramlink\" href=\"#ram/about\" data-ram=\"about\" title=\"Link: #ram/about\">About</a></li></ul></ul>Click on the FileName to bring up the File Manager, which allows you to create new documents etc.<br>"
+        "contents": "<h4>This is a Pure Jasper document.</h4> It contains many paragraphs that link to each other, can be navigated in tabs and have a mix of text, links, html, widgets and scripts.<br><br><ul><li>To Edit this para:&nbsp;Click edit on the top right of this message box</li><li>To Create a new para:&nbsp;Type `[[Para Name]] (without the backtick)&nbsp;</li><ul><li>This will create a special link which when clicked will open a new para in a tab</li><li>Something like this:&nbsp;<a class=\"ramlink\" href=\"#ram/about\" data-ram=\"about\" title=\"Link: #ram/about\">About</a></li></ul></ul>Click on the FileName to bring up the File Manager, which allows you to create new documents etc.<br>"
       }, {
         "name": "About",
         "slug": "about",
