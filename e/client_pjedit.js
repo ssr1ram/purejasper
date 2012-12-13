@@ -476,15 +476,15 @@ buf.push(attrs({ 'style':('position:relative'), "class": ('menubar') }));
 buf.push('></div><div');
 buf.push(attrs({ 'style':('margin-top:30px'), "class": ('main') }));
 buf.push('><div');
-buf.push(attrs({ "class": ('ramtabs') }));
+buf.push(attrs({ "class": ('paratabs') }));
 buf.push('></div><div');
-buf.push(attrs({ "class": ('ramview') }));
+buf.push(attrs({ "class": ('paraview') }));
 buf.push('><div');
-buf.push(attrs({ 'style':('text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd'), "class": ('ramonpage') }));
+buf.push(attrs({ 'style':('text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd'), "class": ('paraonpage') }));
 buf.push('><div');
-buf.push(attrs({ 'style':('color:#cccccc'), "class": ('pull-right') + ' ' + ('ramactions') }));
+buf.push(attrs({ 'style':('color:#cccccc'), "class": ('pull-right') + ' ' + ('paraactions') }));
 buf.push('></div><div');
-buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('ramcontents') }));
+buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('paracontents') }));
 buf.push('><div');
 buf.push(attrs({ 'style':('padding:4px 6px'), "class": ('htmlarea') }));
 buf.push('></div><div');
@@ -582,136 +582,136 @@ require.define("/db/dropio.coffee", function (require, module, exports, __dirnam
 require.define("/db/startdb.coffee", function (require, module, exports, __dirname, __filename) {
 
   module.exports = {
-    "rams": [
+    "paras": [
       {
         "name": "Home",
         "slug": "home",
-        "contents": "<h4>This is a Pure Jasper document.</h4> It contains many paragraphs that link to each other, can be navigated in tabs and have a mix of text, links, html, widgets and scripts.<br><br><ul><li>To Edit this para:&nbsp;Click edit on the top right of this message box</li><li>To Create a new para:&nbsp;Type `[[Para Name]] (without the backtick)&nbsp;</li><ul><li>This will create a special link which when clicked will open a new para in a tab</li><li>Something like this:&nbsp;<a class=\"ramlink\" href=\"#ram/about\" data-ram=\"about\" title=\"Link: #ram/about\">About</a></li></ul></ul>Click on the FileName to bring up the File Manager, which allows you to create new documents etc.<br>"
+        "contents": "<h4>This is a Pure Jasper document.</h4> It contains many paragraphs that link to each other, can be navigated in tabs and have a mix of text, links, html, widgets and scripts.<br><br><ul><li>To Edit this para:&nbsp;Click edit on the top right of this message box</li><li>To Create a new para:&nbsp;Type `[[Para Name]] (without the backtick)&nbsp;</li><ul><li>This will create a special link which when clicked will open a new para in a tab</li><li>Something like this:&nbsp;<a class=\"paralink\" href=\"#para/about\" data-para=\"about\" title=\"Link: #para/about\">About</a></li></ul></ul>Click on the FileName to bring up the File Manager, which allows you to create new documents etc.<br>"
       }, {
         "name": "About",
         "slug": "about",
-        "contents": "About this document<br><br>edit me or go back <a class=\"ramlink\" href=\"#ram/home\" data-ram=\"home\">Home</a>&nbsp;"
+        "contents": "About this document<br><br>edit me or go back <a class=\"paralink\" href=\"#para/home\" data-para=\"home\">Home</a>&nbsp;"
       }
     ]
   };
 
 });
 
-require.define("/rams/ramtabs.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/paras/paratabs.coffee", function (require, module, exports, __dirname, __filename) {
 (function() {
-  var oneRamM, ramTabsT;
+  var oneParaM, paraTabsT;
 
-  ramTabsT = require('./ramtabs.jade');
+  paraTabsT = require('./paratabs.jade');
 
-  oneRamM = require('./oneram.coffee');
+  oneParaM = require('./onepara.coffee');
 
   module.exports = Backbone.View.extend({
     initialize: function() {
       return this.render();
     },
     events: {
-      "click .ramtab": "doramtab"
+      "click .paratab": "doparatab"
     },
     render: function() {
-      var ramname, self;
+      var paraname, self;
       self = this;
       self.tabsonpage = [];
-      Ramdoc.rams.each(function(m) {
+      Paradoc.paras.each(function(m) {
         var el;
         if (m.get("name") === "Sys-tabs") {
           el = $(m.get("contents"));
           return $("a", el).each(function() {
-            return self.tabsonpage.push($(this).attr('data-ram'));
+            return self.tabsonpage.push($(this).attr('data-para'));
           });
         }
       });
       if (self.tabsonpage.length === 0) self.tabsonpage = ["Home", "About"];
       /*
-              $(this.el).html(ramTabsT({
+              $(this.el).html(paraTabsT({
                   tabs: self.tabsonpage
               }))
               $(this.options.parent).append(this.el)
       */
       this.painttabs();
-      ramname = "Home";
-      return Ramdoc.rams.each(function(m) {
-        if (m.get("name") === ramname) {
-          return new oneRamM({
+      paraname = "Home";
+      return Paradoc.paras.each(function(m) {
+        if (m.get("name") === paraname) {
+          return new oneParaM({
             model: m
           });
         }
       });
     },
-    painttabs: function(activeram) {
+    painttabs: function(activepara) {
       var activetab, i, t, _len, _ref;
-      if (activeram) {
+      if (activepara) {
         _ref = this.tabsonpage;
         for (i = 0, _len = _ref.length; i < _len; i++) {
           t = _ref[i];
-          if (t === activeram) activetab = i;
+          if (t === activepara) activetab = i;
         }
       } else {
         activetab = 0;
       }
-      $(this.el).html(ramTabsT({
+      $(this.el).html(paraTabsT({
         tabs: this.tabsonpage,
         activetab: activetab
       }));
       $(this.options.parent).html(this.el);
       return this.delegateEvents();
     },
-    doramtab: function(ev) {
-      var ramname;
-      if (Ramdoc.isediting) return;
-      $(".ramtabwrap").removeClass("active");
-      $(ev.target).closest(".ramtabwrap").addClass('active');
-      ramname = $(ev.target).attr('data-ramname');
+    doparatab: function(ev) {
+      var paraname;
+      if (Paradoc.isediting) return;
+      $(".paratabwrap").removeClass("active");
+      $(ev.target).closest(".paratabwrap").addClass('active');
+      paraname = $(ev.target).attr('data-paraname');
       ev.preventDefault();
-      return Ramdoc.rams.each(function(m) {
-        if (m.get("name") === ramname) {
-          return new oneRamM({
+      return Paradoc.paras.each(function(m) {
+        if (m.get("name") === paraname) {
+          return new oneParaM({
             model: m
           });
         }
       });
     },
-    addatab: function(ramslug, ramname) {
-      var m, mrs, ramm, self;
+    addatab: function(paraslug, paraname) {
+      var m, mrs, para, self;
       self = this;
-      ramm = null;
-      mrs = Ramdoc.rams.where({
-        slug: ramslug
+      para = null;
+      mrs = Paradoc.paras.where({
+        slug: paraslug
       });
-      if (mrs) ramm = mrs[0];
-      if (!ramm) {
-        console.log('no ramm');
+      if (mrs) para = mrs[0];
+      if (!para) {
+        console.log('no para');
         m = new Backbone.Model({
-          name: ramname,
-          slug: ramslug,
+          name: paraname,
+          slug: paraslug,
           contents: "<div class='row-fluid'><div class='span6'>Penny for your thoughts</div><div class='span6'>another penny</div></div>"
         });
-        Ramdoc.rams.add(m);
-        self.tabsonpage.push(ramname);
-        self.painttabs(ramname);
+        Paradoc.paras.add(m);
+        self.tabsonpage.push(paraname);
+        self.painttabs(paraname);
       }
-      if ($(".ramtab[data-ramname='" + ramname + "']").length > 0) {
-        return $(".ramtab[data-ramname='" + ramname + "']").click();
+      if ($(".paratab[data-paraname='" + paraname + "']").length > 0) {
+        return $(".paratab[data-paraname='" + paraname + "']").click();
       } else {
-        self.tabsonpage.push(ramname);
-        self.painttabs(ramname);
-        return $(".ramtab[data-ramname='" + ramname + "']").click();
+        self.tabsonpage.push(paraname);
+        self.painttabs(paraname);
+        return $(".paratab[data-paraname='" + paraname + "']").click();
       }
     },
-    rmatab: function(ramname) {
+    rmatab: function(paraname) {
       var i, t, _len, _ref, _results;
       _ref = this.tabsonpage;
       _results = [];
       for (i = 0, _len = _ref.length; i < _len; i++) {
         t = _ref[i];
-        if (t === ramname) {
-          $(".ramtab[data-ramname='" + this.tabsonpage[i - 1] + "']").click();
+        if (t === paraname) {
+          $(".paratab[data-paraname='" + this.tabsonpage[i - 1] + "']").click();
           this.tabsonpage.splice(i, 1);
-          _results.push($(".ramtab[data-ramname='" + ramname + "']").closest(".ramtabwrap").remove());
+          _results.push($(".paratab[data-paraname='" + paraname + "']").closest(".paratabwrap").remove());
         } else {
           _results.push(void 0);
         }
@@ -724,7 +724,7 @@ require.define("/rams/ramtabs.coffee", function (require, module, exports, __dir
 
 });
 
-require.define("/rams/ramtabs.jade", function (require, module, exports, __dirname, __filename) {
+require.define("/paras/paratabs.jade", function (require, module, exports, __dirname, __filename) {
 module.exports = function anonymous(locals, attrs, escape, rethrow) {
 var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
 var buf = [];
@@ -733,7 +733,7 @@ var interp;
 buf.push('<div');
 buf.push(attrs({ 'style':('margin-top:2px') }));
 buf.push('><ul');
-buf.push(attrs({ 'style':('margin-bottom:0px'), "class": ('nav') + ' ' + ('nav-tabs') + ' ' + ('ramtabmom') }));
+buf.push(attrs({ 'style':('margin-bottom:0px'), "class": ('nav') + ' ' + ('nav-tabs') + ' ' + ('paratabmom') }));
 buf.push('>');
 // iterate tabs
 (function(){
@@ -744,17 +744,17 @@ buf.push('>');
 if ( i === activetab)
 {
 buf.push('<li');
-buf.push(attrs({ "class": ('active') + ' ' + ('ramtabwrap') }));
+buf.push(attrs({ "class": ('active') + ' ' + ('paratabwrap') }));
 buf.push('><a');
-buf.push(attrs({ 'data-ramname':('' + (tab) + ''), "class": ('ramtab') }));
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
 buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
 }
 else
 {
 buf.push('<li');
-buf.push(attrs({ "class": ('ramtabwrap') }));
+buf.push(attrs({ "class": ('paratabwrap') }));
 buf.push('><a');
-buf.push(attrs({ 'data-ramname':('' + (tab) + ''), "class": ('ramtab') }));
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
 buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
 }
     }
@@ -765,17 +765,17 @@ buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
 if ( i === activetab)
 {
 buf.push('<li');
-buf.push(attrs({ "class": ('active') + ' ' + ('ramtabwrap') }));
+buf.push(attrs({ "class": ('active') + ' ' + ('paratabwrap') }));
 buf.push('><a');
-buf.push(attrs({ 'data-ramname':('' + (tab) + ''), "class": ('ramtab') }));
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
 buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
 }
 else
 {
 buf.push('<li');
-buf.push(attrs({ "class": ('ramtabwrap') }));
+buf.push(attrs({ "class": ('paratabwrap') }));
 buf.push('><a');
-buf.push(attrs({ 'data-ramname':('' + (tab) + ''), "class": ('ramtab') }));
+buf.push(attrs({ 'data-paraname':('' + (tab) + ''), "class": ('paratab') }));
 buf.push('>' + escape((interp = tab) == null ? '' : interp) + '\n</a></li>');
 }
    }
@@ -788,13 +788,13 @@ return buf.join("");
 };
 });
 
-require.define("/rams/oneram.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/paras/onepara.coffee", function (require, module, exports, __dirname, __filename) {
 (function() {
-  var oneRamT, oneRamactionsM;
+  var oneParaT, oneParaactionsM;
 
-  oneRamT = require('./oneram.jade');
+  oneParaT = require('./onepara.jade');
 
-  oneRamactionsM = require('./oneramactions');
+  oneParaactionsM = require('./oneparaactions');
 
   module.exports = Backbone.View.extend({
     initialize: function() {
@@ -811,16 +811,16 @@ require.define("/rams/oneram.coffee", function (require, module, exports, __dirn
               if h< 150
                   h = 150
               w = $(".container.main").width()
-              $(this.el).html(oneRamT({
+              $(this.el).html(oneParaT({
                   h: h
                   w: w
               }))
-              $(".ramview").html(this.el)
+              $(".paraview").html(this.el)
       */
       $(".htmlarea").html(this.gethtml());
-      return this.ora = new oneRamactionsM({
+      return this.ora = new oneParaactionsM({
         model: this.model,
-        ramview: this
+        paraview: this
       });
     },
     doedit: function(ev) {
@@ -849,14 +849,14 @@ require.define("/rams/oneram.coffee", function (require, module, exports, __dirn
       $(".htmlarea").hide();
       $(".editspot").show();
       h = this.gethtml();
-      return Ramdoc.editor.setValue(h);
+      return Paradoc.editor.setValue(h);
     },
     showview: function() {
       $(".editarea").val('');
       $(".editspot").hide();
       return $(".htmlarea").html(this.gethtml()).show();
     },
-    getRamraw: function() {
+    getPararaw: function() {
       return $(".editarea").val();
     }
   });
@@ -865,18 +865,18 @@ require.define("/rams/oneram.coffee", function (require, module, exports, __dirn
 
 });
 
-require.define("/rams/oneram.jade", function (require, module, exports, __dirname, __filename) {
+require.define("/paras/onepara.jade", function (require, module, exports, __dirname, __filename) {
 module.exports = function anonymous(locals, attrs, escape, rethrow) {
 var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
 var buf = [];
 with (locals || {}) {
 var interp;
 buf.push('<div><div');
-buf.push(attrs({ 'style':('text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd'), "class": ('ramonpage') }));
+buf.push(attrs({ 'style':('text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd'), "class": ('paraonpage') }));
 buf.push('><div');
-buf.push(attrs({ 'style':('color:#cccccc'), "class": ('pull-right') + ' ' + ('ramactions') }));
+buf.push(attrs({ 'style':('color:#cccccc'), "class": ('pull-right') + ' ' + ('paraactions') }));
 buf.push('></div><div');
-buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('ramcontents') }));
+buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('paracontents') }));
 buf.push('><div');
 buf.push(attrs({ 'style':('padding:4px 6px'), "class": ('htmlarea') }));
 buf.push('></div><div');
@@ -889,11 +889,11 @@ return buf.join("");
 };
 });
 
-require.define("/rams/oneramactions.coffee", function (require, module, exports, __dirname, __filename) {
+require.define("/paras/oneparaactions.coffee", function (require, module, exports, __dirname, __filename) {
 (function() {
-  var dropio, oneRamactionsT;
+  var dropio, oneParaactionsT;
 
-  oneRamactionsT = require('./oneramactions.jade');
+  oneParaactionsT = require('./oneparaactions.jade');
 
   dropio = require('../db/dropio');
 
@@ -909,43 +909,43 @@ require.define("/rams/oneramactions.coffee", function (require, module, exports,
       "click .dodel": "dodel"
     },
     render: function() {
-      $(this.el).html(oneRamactionsT({
-        ram: this.model.toJSON()
+      $(this.el).html(oneParaactionsT({
+        para: this.model.toJSON()
       }));
-      return $(".ramactions").html(this.el);
+      return $(".paraactions").html(this.el);
     },
     doedit: function(ev) {
-      Ramdoc.isediting = true;
-      this.options.ramview.showedit();
+      Paradoc.isediting = true;
+      this.options.paraview.showedit();
       $(".savegroup", this.el).show();
       return $(".editgroup", this.el).hide();
     },
     doxncl: function(ev) {
-      Ramdoc.isediting = false;
-      this.options.ramview.showview();
+      Paradoc.isediting = false;
+      this.options.paraview.showview();
       $(".savegroup", self.el).hide();
       return $(".editgroup", self.el).show();
     },
     doclose: function(ev) {
-      return Ramdoc.ramtabs.rmatab(this.model.get("name"));
+      return Paradoc.paratabs.rmatab(this.model.get("name"));
     },
     dosave: function(ev) {
-      var ramname, ramtext, self;
+      var paraname, paratext, self;
       self = this;
-      ramtext = this.options.ramview.getRamraw();
-      ramname = this.options.ramview.model.get("name");
-      return Ramdoc.rams.each(function(m) {
+      paratext = this.options.paraview.getPararaw();
+      paraname = this.options.paraview.model.get("name");
+      return Paradoc.paras.each(function(m) {
         var d;
-        if (m.get("name") === ramname) {
-          m.set("contents", ramtext);
-          self.options.ramview.model.set('contents', ramtext);
+        if (m.get("name") === paraname) {
+          m.set("contents", paratext);
+          self.options.paraview.model.set('contents', paratext);
           d = {
-            rams: Ramdoc.rams.toJSON()
+            paras: Paradoc.paras.toJSON()
           };
-          console.log('saving to ' + Ramdoc.doc);
-          return dropio.save(Ramdoc.doc, JSON.stringify(d), function() {
-            Ramdoc.isediting = false;
-            self.options.ramview.showview();
+          console.log('saving to ' + Paradoc.doc);
+          return dropio.save(Paradoc.doc, JSON.stringify(d), function() {
+            Paradoc.isediting = false;
+            self.options.paraview.showview();
             $(".savegroup", self.el).hide();
             return $(".editgroup", self.el).show();
           });
@@ -953,17 +953,17 @@ require.define("/rams/oneramactions.coffee", function (require, module, exports,
       });
     },
     dodel: function(ev) {
-      var mrs, ramslug;
-      ramslug = this.options.ramview.model.get("slug");
-      mrs = Ramdoc.rams.where({
-        slug: ramslug
+      var mrs, paraslug;
+      paraslug = this.options.paraview.model.get("slug");
+      mrs = Paradoc.paras.where({
+        slug: paraslug
       });
       if (mrs) {
         this.doxncl();
-        Ramdoc.rams.remove(mrs[0]);
-        Ramdoc.ramtabs.rmatab(mrs[0].get("name"));
-        return dropio.save(Ramdoc.doc, JSON.stringify({
-          rams: Ramdoc.rams.toJSON()
+        Paradoc.paras.remove(mrs[0]);
+        Paradoc.paratabs.rmatab(mrs[0].get("name"));
+        return dropio.save(Paradoc.doc, JSON.stringify({
+          paras: Paradoc.paras.toJSON()
         }));
       }
     }
@@ -973,7 +973,7 @@ require.define("/rams/oneramactions.coffee", function (require, module, exports,
 
 });
 
-require.define("/rams/oneramactions.jade", function (require, module, exports, __dirname, __filename) {
+require.define("/paras/oneparaactions.jade", function (require, module, exports, __dirname, __filename) {
 module.exports = function anonymous(locals, attrs, escape, rethrow) {
 var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
 var buf = [];
@@ -984,7 +984,7 @@ buf.push(attrs({ "class": ('editgroup') }));
 buf.push('><span');
 buf.push(attrs({ "class": ('doedit') + ' ' + ('pointer') + ' ' + ('word') }));
 buf.push('>edit</span>');
-if ( ram.slug != 'home')
+if ( para.slug != 'home')
 {
 buf.push('<span');
 buf.push(attrs({ "class": ('doclose') + ' ' + ('pointer') + ' ' + ('word') }));
@@ -993,7 +993,7 @@ buf.push('>close</span>');
 buf.push('</div><div');
 buf.push(attrs({ 'style':('display:none'), "class": ('savegroup') }));
 buf.push('>');
-if ( ram.slug != 'home')
+if ( para.slug != 'home')
 {
 buf.push('<span');
 buf.push(attrs({ 'style':('color:red;padding-right:15px'), "class": ('dodel') + ' ' + ('pointer') }));
@@ -1067,7 +1067,7 @@ buf.push('><div');
 buf.push(attrs({ "class": ('btn-group') }));
 buf.push('><a');
 buf.push(attrs({ 'data-toggle':('dropdown'), "class": ('btn') + ' ' + ('dropdown-toggle') }));
-buf.push('>' + escape((interp = filename.replace('.ram', '')) == null ? '' : interp) + '\n<span');
+buf.push('>' + escape((interp = filename.replace('.pjs', '')) == null ? '' : interp) + '\n<span');
 buf.push(attrs({ "class": ('caret') }));
 buf.push('></span></a><ul');
 buf.push(attrs({ "class": ('dropdown-menu') }));
@@ -1236,13 +1236,13 @@ require.define("/filemanager/manager.coffee", function (require, module, exports
       }
       if (nufile.indexOf('.pjs') === -1) nufile = nufile + ".pjs";
       return dropio.create(nufile, function() {
-        Ramdoc.navigate('#doc/' + nufile, false);
+        Paradoc.navigate('#doc/' + nufile, false);
         return location.reload();
       });
     },
     doopen: function(ev) {
       if (this.getthefile()) {
-        Ramdoc.navigate('#doc/' + this.thefile, false);
+        Paradoc.navigate('#doc/' + this.thefile, false);
         return location.reload();
       }
     }
@@ -1431,7 +1431,7 @@ require.define("/utils/wiki_link.coffee", function (require, module, exports, __
     matches = str.match(WIKI_REGEX);
     if (matches) {
       slug = utils.slugify(matches[1]);
-      str = str.replace(WIKI_REGEX, " <a class='ramlink' href='#ram/" + slug + "' data-ram='" + slug + "'>" + matches[1] + "</a>");
+      str = str.replace(WIKI_REGEX, " <a class='paralink' href='#para/" + slug + "' data-para='" + slug + "'>" + matches[1] + "</a>");
     }
     return str;
   };
@@ -1495,13 +1495,13 @@ require.define("/utils/utils.coffee", function (require, module, exports, __dirn
 
 require.define("/app.coffee", function (require, module, exports, __dirname, __filename) {
     (function() {
-  var AppRouter, WIKI_REGEX, appRouter, dropio, fileactionsM, pageT, ramTabsM, utils, v, wikilink;
+  var AppRouter, WIKI_REGEX, appRouter, dropio, fileactionsM, pageT, paraTabsM, utils, v, wikilink;
 
   pageT = require('./page');
 
   dropio = require('./db/dropio');
 
-  ramTabsM = require('./rams/ramtabs');
+  paraTabsM = require('./paras/paratabs');
 
   fileactionsM = require('./filemanager/actions');
 
@@ -1525,25 +1525,29 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
         } catch (e) {
           console.log('bad data');
           jdoc = {
-            rams: []
+            paras: []
           };
         }
-        Ramdoc.rams = new Backbone.Collection(jdoc['rams']);
-        Ramdoc.rams.each(function(m) {
+        if (jdoc['rams']) {
+          Paradoc.paras = new Backbone.Collection(jdoc['rams']);
+        } else {
+          Paradoc.paras = new Backbone.Collection(jdoc['paras']);
+        }
+        Paradoc.paras.each(function(m) {
           if (!m.get("slug")) return m.set("slug", utils.slugify(m.get("name")));
         });
-        Ramdoc.doc = self.filename;
+        Paradoc.doc = self.filename;
         return self.render();
       });
     },
     events: {
-      "click .ramlink": "doramlink"
+      "click .paralink": "doparalink"
     },
-    doramlink: function(ev) {
-      var ramname, ramslug;
-      ramslug = $(ev.target).attr('data-ram');
-      ramname = $(ev.target).text();
-      Ramdoc.ramtabs.addatab(ramslug, ramname);
+    doparalink: function(ev) {
+      var paraname, paraslug;
+      paraslug = $(ev.target).attr('data-para');
+      paraname = $(ev.target).text();
+      Paradoc.paratabs.addatab(paraslug, paraname);
       return ev.preventDefault();
     },
     render: function() {
@@ -1555,16 +1559,16 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
       $(self.el).html(pageT({
         h: h,
         w: w,
-        doc: Ramdoc.doc
+        doc: Paradoc.doc
       }));
-      $("#user-name").text(Ramdoc.userInfo.name);
+      $("#user-name").text(Paradoc.userInfo.name);
       fa = new fileactionsM({
         filename: this.filename
       });
-      Ramdoc.ramtabs = new ramTabsM({
-        parent: $(".ramtabs", self.el)
+      Paradoc.paratabs = new paraTabsM({
+        parent: $(".paratabs", self.el)
       });
-      return Ramdoc.seteditor();
+      return Paradoc.seteditor();
     }
   });
 
@@ -1591,7 +1595,7 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
   appRouter = new AppRouter();
 
   $(function() {
-    window.Ramdoc = {
+    window.Paradoc = {
       ext: "pjs",
       navigate: function(path, trigger) {
         if (trigger == null) trigger = true;
@@ -1621,7 +1625,7 @@ require.define("/app.coffee", function (require, module, exports, __dirname, __f
       dropio: dropio
     };
     return dropio.start(function(userInfo) {
-      Ramdoc.userInfo = userInfo;
+      Paradoc.userInfo = userInfo;
       return Backbone.history.start();
     });
   });
