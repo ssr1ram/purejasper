@@ -777,6 +777,7 @@ require.define("/paras/paratabs.coffee",function(require,module,exports,__dirnam
       $(ev.target).closest(".paratabwrap").addClass('active');
       paraname = $(ev.target).attr('data-paraname');
       ev.preventDefault();
+      console.log('pn ' + paraname);
       return Paradoc.paras.each(function(m) {
         if (m.get("name") === paraname) {
           return new oneParaM({
@@ -796,11 +797,11 @@ require.define("/paras/paratabs.coffee",function(require,module,exports,__dirnam
         para = mrs[0];
       }
       if (!para) {
-        console.log('no para');
+        console.log('xxno para');
         m = new Backbone.Model({
           name: paraname,
           slug: paraslug,
-          contents: "<div class='row-fluid'><div class='span6'>Penny for your thoughts</div><div class='span6'>another penny</div></div>"
+          contents: ""
         });
         Paradoc.paras.add(m);
         self.tabsonpage.push(paraname);
@@ -892,11 +893,13 @@ return buf.join("");
 });
 
 require.define("/paras/onepara.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
-  var basicPM, oneParaT, oneParaactionsM;
+  var basicPM, oneParaT, oneParaactionsM, plateselPM;
 
   oneParaT = require('./onepara.jade');
 
   basicPM = require('../plugins/basic');
+
+  plateselPM = require('../plugins/platesel');
 
   oneParaactionsM = require('./oneparaactions');
 
@@ -908,28 +911,30 @@ require.define("/paras/onepara.coffee",function(require,module,exports,__dirname
       "dblclick": "doedit"
     },
     render: function() {
-      var p, self, x;
+      var self;
       self = this;
-      if (this.model.get("plugin")) {
-        x = 1;
-        console.log('xx');
+      this.ora = new oneParaactionsM({
+        model: this.model,
+        paraview: this
+      });
+      if (!this.model.get("contents")) {
+        return this.plugin = new plateselPM({
+          model: this.model,
+          parent: $(".htmlarea")
+        });
       } else {
-        p = new basicPM({
+        return this.plugin = new basicPM({
           model: this.model,
           parent: $(".htmlarea")
         });
       }
-      return this.ora = new oneParaactionsM({
-        model: this.model,
-        paraview: this
-      });
     },
     doedit: function(ev) {
       return this.ora.doedit();
     },
     gethtml: function() {
       var text;
-      text = this.model.get("contents");
+      text = this.plugin.gethtml();
       return text;
     },
     showedit: function() {
@@ -990,6 +995,120 @@ require.define("/plugins/basic.coffee",function(require,module,exports,__dirname
       return text;
     }
   });
+
+}).call(this);
+
+});
+
+require.define("/plugins/platesel.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
+  var plates, plateselT, utils;
+
+  plateselT = require('./platesel.jade');
+
+  plates = {
+    colb: require('./colb.jade'),
+    colc: require('./colc.jade')
+  };
+
+  utils = require('../utils/utils');
+
+  module.exports = Backbone.View.extend({
+    initialize: function() {
+      return this.render();
+    },
+    events: {
+      "click .dotemplate": "dotemplate",
+      "click .platesel": "doplatesel"
+    },
+    render: function() {
+      $(this.el).html(plateselT());
+      $(this.options.parent).html(this.el);
+      return $(".doedit").hide();
+    },
+    gethtml: function() {
+      var text;
+      text = this.model.get("contents");
+      return text;
+    },
+    doplatesel: function(ev) {
+      var zcol;
+      zcol = $(".platesel").val();
+      $(".plateview").html(plates[zcol]());
+      return utils.getJson("/data/test.jsonp", function(data) {
+        return console.log('d ' + JSON.stringify(data));
+      });
+    },
+    dotemplate: function(ev) {
+      var zcol;
+      zcol = $(".platesel").val();
+      if (!zcol) {
+        zcol = 'colc';
+      }
+      this.model.set("contents", plates[zcol]());
+      this.unbind();
+      this.remove();
+      return $(".paratab[data-paraname='" + this.model.get("name") + "']").click();
+    }
+  });
+
+}).call(this);
+
+});
+
+require.define("/plugins/platesel.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
+var buf = [];
+with (locals || {}) {
+var interp;
+buf.push('<h3>Choose a template</h3><div style="margin:10px 5px" class="row-fluid"><div class="span3"><select size="10" style="width:90%" class="platesel"><option value="colc">Three column</option><option value="colb">Two column</option></select></div><div class="span9"><div style="margin:30px;padding:20px;min-height:250px;zoom:50%;border:1px solid #cccccc" class="plateview">select a template</div></div></div><div style="margin:10px" class="row-fluid"><div class="pull-right"><button class="btn dotemplate">Create</button></div></div>');
+}
+return buf.join("");
+};
+});
+
+require.define("/plugins/colb.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
+var buf = [];
+with (locals || {}) {
+var interp;
+buf.push('<h3>Two columns</h3><div style="margin:10px 5px" class="row-fluid"><div class="span6"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div><div class="span6"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div></div><div style="margin:10px" class="row-fluid">more text here</div>');
+}
+return buf.join("");
+};
+});
+
+require.define("/plugins/colc.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
+attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
+var buf = [];
+with (locals || {}) {
+var interp;
+buf.push('<h3>Lots of links</h3><div style="margin:10px 5px" class="row-fluid"><div class="span4"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div><div class="span4"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div><div class="span4"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div></div><div style="margin:10px" class="row-fluid">more text here</div>');
+}
+return buf.join("");
+};
+});
+
+require.define("/utils/utils.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
+
+  module.exports.slugify = function(text) {
+    text = text.replace(/[^-a-zA-Z0-9,&\s]+/ig, '');
+    text = text.replace(/-/gi, "_");
+    text = text.replace(/\s/gi, "-");
+    text = text.toLowerCase();
+    return text;
+  };
+
+  module.exports.getJson = function(url, cb) {
+    return $.ajax({
+      url: url,
+      type: "GET",
+      dataType: "jsonp",
+      jsonpCallback: "paradocJson",
+      success: function(data) {
+        return cb(data);
+      }
+    });
+  };
 
 }).call(this);
 
@@ -1381,13 +1500,14 @@ require.define("/filemanager/manager.coffee",function(require,module,exports,__d
           paras: Paradoc.paras.toJSON()
         };
         html = publishmlT({
-          paras: JSON.stringify(d)
+          paras: JSON.stringify(d),
+          now: new Date().getTime()
         });
         fname = this.thefile.replace('.pjs', '') + '.html';
         console.log(html);
         return dropio.save(fname, html, function() {
           console.log('saved');
-          return dropio.geturl(fname, function(url) {
+          return dropio.geturl(fname, function(err, url) {
             console.log('url is ' + url.url);
             return $(".actionspot", this.el).html(publishT({
               thefile: self.thefile,
@@ -1517,7 +1637,7 @@ attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow |
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<html><head><title>PureJasper - Personal wikis</title><link href="http://purejasper.com/e/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"/><link href="http://purejasper.com/e/css/bootstrap-wysihtml5.css" rel="stylesheet" media="screen"/><link rel="http://purejasper.com/e/stylesheet/less" type="text/css" href="./app.less"/><script type="text/javascript" src="http://purejasper.com/e/lib/underscore-min.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/dropbox.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/wysihtml5-0.3.0.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/jquery.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/backbone-min.js"></script><script type="text/javascript" src="http://purejasper.com/e/bootstrap/js/bootstrap.min.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/less.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/showdown.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/bs-wysi5.js"></script></head><body style="background-color:#f4f4f4"><div style="text-align:center"><h1 style="margin:100px auto">Loading...</h1></div><script>var jdoc = ' + ((interp = paras) == null ? '' : interp) + ';\n</script><script type="text/javascript" src="http://purejasper.com/e/client_pjview.min.js"></script></body></html>');
+buf.push('<html><head><title>PureJasper - Personal wikis</title><link href="http://purejasper.com/e/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"/><link href="http://purejasper.com/e/css/bootstrap-wysihtml5.css" rel="stylesheet" media="screen"/><link rel="http://purejasper.com/e/stylesheet/less" type="text/css" href="./app.less"/><script type="text/javascript" src="http://purejasper.com/e/lib/underscore-min.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/dropbox.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/wysihtml5-0.3.0.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/jquery.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/backbone-min.js"></script><script type="text/javascript" src="http://purejasper.com/e/bootstrap/js/bootstrap.min.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/less.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/showdown.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/bs-wysi5.js"></script></head><body style="background-color:#f4f4f4"><div style="text-align:center"><h1 style="margin:100px auto">Loading...</h1></div><script>var jdoc = ' + ((interp = paras) == null ? '' : interp) + ';\n</script><script type="text/javascript" src="http://purejasper.com/e/client_pjview.min.js?v=#_now}"></script></body></html>');
 }
 return buf.join("");
 };
@@ -1579,20 +1699,6 @@ require.define("/utils/wiki_link.coffee",function(require,module,exports,__dirna
 
   module.exports = function(element) {
     return _parseNode(element);
-  };
-
-}).call(this);
-
-});
-
-require.define("/utils/utils.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
-
-  module.exports.slugify = function(text) {
-    text = text.replace(/[^-a-zA-Z0-9,&\s]+/ig, '');
-    text = text.replace(/-/gi, "_");
-    text = text.replace(/\s/gi, "-");
-    text = text.toLowerCase();
-    return text;
   };
 
 }).call(this);
@@ -1725,7 +1831,7 @@ require.define("/app.coffee",function(require,module,exports,__dirname,__filenam
         var self;
         self = this;
         this.editor = $('.editarea').wysihtml5({
-          stylesheets: ["bootstrap/css/bootstrap.min.css"]
+          stylesheets: ["bootstrap/css/bootstrap.min.css", "app.css"]
         }).data("wysihtml5").editor;
         return this.editor.on('newword:composer', function() {
           var composer, edittext, matches;

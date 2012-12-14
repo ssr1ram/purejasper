@@ -1,0 +1,3 @@
+paradocJson({
+    "hello": "world"
+});
