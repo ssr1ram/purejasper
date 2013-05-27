@@ -1,7 +1,7 @@
-purejasper
+Purejasper
 ===========
 
-A Putrejasper is an Html5 notebook with tabs & links.
+A Purejasper is an Html5 notebook with tabs & links.
 
 The documents reside in your private Dropbox folders and comprise of many paragraphs, that the javascript logic in your browser manipulates to provide you rich paragraph navigation and editing.
 
@@ -32,3 +32,5 @@ As can be seen from the above
 This is a very early alpha version and planned for the future are
 - Themes and templates
 - Scripts and plugins
+
+There is a Google Group [Purejasper-talk](https://groups.google.com/forum/?fromgroups#!forum/purejasper-talk) where you can ask questions and find out more information.
