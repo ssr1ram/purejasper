@@ -33,4 +33,7 @@ This is a very early alpha version and planned for the future are
 - Themes and templates
 - Scripts and plugins
 
+You can get started by going to [Purejasper.com](http://purejasper.com)
+
 There is a Google Group [Purejasper-talk](https://groups.google.com/forum/?fromgroups#!forum/purejasper-talk) where you can ask questions and find out more information.
+
