@@ -578,9 +578,9 @@ with (locals || {}) {
 var interp;
 buf.push('<div class="container"><div style="position:relative" class="menubar"></div><div style="margin-top:30px" class="main"><div class="paratabs"></div><div class="paraview"><div style="text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd" class="paraonpage"><div style="color:#cccccc" class="pull-right paraactions"></div><div');
 buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px;overflow:auto'), "class": ('paracontents') }, {"style":true}));
-buf.push('> <div style="padding:4px 6px" class="htmlarea"></div><div style="display:none" class="editspot"><textarea');
+buf.push('> <div style="padding:4px 6px" class="htmlarea paraspot"></div><div style="display:none" class="editspot paraspot"><textarea');
 buf.push(attrs({ 'style':('width:100%;height:' + (h-10) + 'px;'), "class": ('editarea') }, {"style":true}));
-buf.push('></textarea></div></div></div></div><div style="text-align:center"><div style="color:#ccc;margin-top:20px;letter-spacing:3px">&copy; 2013 purejasper.com</div></div></div></div><div style="display:none" class="modal ymodal"></div>');
+buf.push('></textarea></div><div style="display:none" class="widgetspot paraspot"></div></div></div></div><div style="text-align:center"><div style="color:#ccc;margin-top:20px;letter-spacing:3px">&copy; 2013 purejasper.com</div></div></div></div><div style="display:none" class="modal ymodal"></div>');
 }
 return buf.join("");
 };
@@ -907,57 +907,92 @@ require.define("/paras/onepara.coffee",function(require,module,exports,__dirname
     initialize: function() {
       return this.render();
     },
-    events: {
-      "dblclick": "doedit"
-    },
     render: function() {
       var self;
       self = this;
       this.ora = new oneParaactionsM({
         model: this.model,
-        paraview: this
+        thepara: this
       });
       if (!this.model.get("contents")) {
         return this.plugin = new plateselPM({
           model: this.model,
           parent: $(".htmlarea")
         });
+      } else if (this.model.get("source")) {
+        return $.getScript(this.model.get("source")).done(function(data) {
+          console.log('aa');
+          self.plugin = window.Paradoc._para;
+          return self.plugin.zview = new window.Paradoc._para.showview({
+            model: self.model,
+            parent: $(".htmlarea"),
+            thepara: self
+          });
+        }).fail(function(xhr, settings, exception) {
+          return console.log('err ' + exception);
+        });
       } else {
-        return this.plugin = new basicPM({
+        self.plugin = basicPM;
+        return self.plugin.zview = new self.plugin.showview({
           model: this.model,
-          parent: $(".htmlarea")
+          parent: $(".htmlarea"),
+          thepara: self
         });
       }
-    },
-    doedit: function(ev) {
-      return this.ora.doedit();
-    },
-    gethtml: function() {
-      var text;
-      text = this.plugin.gethtml();
-      return text;
     },
     showedit: function() {
-      var h;
-      if (!$(".wysihtml5-toolbar").hasClass("editspot")) {
-        $(".wysihtml5-toolbar").addClass("editspot").appendTo(".menubar").css({
-          position: 'absolute',
-          top: '0px',
-          left: '0px'
-        });
+      if (this.plugin.zedit) {
+        this.plugin.zedit.remove();
+        this.plugin.zedit.unbind();
       }
-      $(".htmlarea").hide();
-      $(".editspot").show();
-      h = this.gethtml();
-      return Paradoc.editor.setValue(h);
+      if (this.plugin.zview) {
+        this.plugin.zview.remove();
+        this.plugin.zview.unbind();
+      }
+      $(".paraspot").hide();
+      this.plugin.zedit = new this.plugin.editview({
+        model: this.model,
+        thepara: self
+      });
+      if (this.plugin.noeditor) {
+        $(".widgetspot").html(this.plugin.zedit.el).show();
+        return this.plugin.zedit.delegateEvents();
+      } else {
+        if (!$(".wysihtml5-toolbar").hasClass("editspot")) {
+          $(".wysihtml5-toolbar").addClass("editspot").addClass("paraspot").appendTo(".menubar").css({
+            position: 'absolute',
+            top: '0px',
+            left: '0px'
+          });
+        }
+        $(".editspot").show();
+        return Paradoc.editor.setValue($(this.plugin.zedit.el).html());
+      }
     },
     showview: function() {
+      var self;
+      self = this;
+      if (this.plugin.zedit) {
+        this.plugin.zedit.remove();
+        this.plugin.zedit.unbind();
+      }
+      if (this.plugin.zview) {
+        this.plugin.zview.remove();
+        this.plugin.zview.unbind();
+      }
+      $(".paraspot").hide();
       $(".editarea").val('');
-      $(".editspot").hide();
-      return $(".htmlarea").html(this.gethtml()).show();
+      self.plugin.zview = new self.plugin.showview({
+        model: this.model,
+        parent: $(".htmlarea"),
+        thepara: self
+      });
+      return $(".htmlarea").show();
     },
-    getPararaw: function() {
-      return $(".editarea").val();
+    getModel: function() {
+      var m;
+      m = this.plugin.zedit.getModel($(".editarea").val());
+      return m;
     }
   });
 
@@ -972,9 +1007,9 @@ with (locals || {}) {
 var interp;
 buf.push('<div><div style="text-align:left;background-color:#ffffff;padding:0px 10px;border-left:1px solid #ddd;border-right:1px solid #ddd;border-bottom:1px solid #ddd" class="paraonpage"><div style="color:#cccccc" class="pull-right paraactions"></div><div');
 buf.push(attrs({ 'style':('clear:both;padding:0px 10px;margin-right:16px;height:' + (h) + 'px'), "class": ('paracontents') }, {"style":true}));
-buf.push('> <div style="padding:4px 6px" class="htmlarea"></div><div style="display:none" class="editspot"><textarea');
+buf.push('> <div style="padding:4px 6px" class="htmlarea paraspot"></div><div style="display:none" class="editspot paraspot"><textarea');
 buf.push(attrs({ 'style':('width:100%;height:' + (h-10) + 'px;'), "class": ('editarea') }, {"style":true}));
-buf.push('></textarea></div></div></div></div>');
+buf.push('></textarea></div><div style="display:none" class="widgetspot paraspot"></div></div></div></div>');
 }
 return buf.join("");
 };
@@ -982,33 +1017,42 @@ return buf.join("");
 
 require.define("/plugins/basic.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
 
-  module.exports = Backbone.View.extend({
-    initialize: function() {
-      return this.render();
-    },
-    render: function() {
-      return $(this.options.parent).html(this.gethtml());
-    },
-    gethtml: function() {
-      var text;
-      text = this.model.get("contents");
-      return text;
-    }
-  });
+  module.exports = {
+    showview: Backbone.View.extend({
+      initialize: function() {
+        return this.render();
+      },
+      render: function() {
+        var html;
+        html = this.model.get("contents");
+        $(this.el).html(html);
+        return $(this.options.parent).html(this.el);
+      }
+    }),
+    editview: Backbone.View.extend({
+      initialize: function() {
+        return this.render();
+      },
+      render: function() {
+        var html;
+        html = this.model.get("contents");
+        return $(this.el).html(html);
+      },
+      getModel: function(contents) {
+        this.model.set("contents", contents);
+        return this.model;
+      }
+    })
+  };
 
 }).call(this);
 
 });
 
 require.define("/plugins/platesel.coffee",function(require,module,exports,__dirname,__filename,process,global){(function() {
-  var plates, plateselT, utils;
+  var plateselT, utils;
 
   plateselT = require('./platesel.jade');
-
-  plates = {
-    colb: require('./colb.jade'),
-    colc: require('./colc.jade')
-  };
 
   utils = require('../utils/utils');
 
@@ -1021,9 +1065,16 @@ require.define("/plugins/platesel.coffee",function(require,module,exports,__dirn
       "click .platesel": "doplatesel"
     },
     render: function() {
-      $(this.el).html(plateselT());
-      $(this.options.parent).html(this.el);
-      return $(".doedit").hide();
+      var self;
+      self = this;
+      console.log('a');
+      return utils.getJson("/data/plates/list.jsonp", function(data) {
+        $(self.el).html(plateselT({
+          plates: data['plates']
+        }));
+        $(self.options.parent).html(self.el);
+        return $(".doedit").hide();
+      });
     },
     gethtml: function() {
       var text;
@@ -1031,23 +1082,31 @@ require.define("/plugins/platesel.coffee",function(require,module,exports,__dirn
       return text;
     },
     doplatesel: function(ev) {
-      var zcol;
-      zcol = $(".platesel").val();
-      $(".plateview").html(plates[zcol]());
-      return utils.getJson("/data/test.jsonp", function(data) {
-        return console.log('d ' + JSON.stringify(data));
+      var source;
+      source = $(".platesel").val();
+      console.log('ss ' + source);
+      return $.getScript(source, function(data) {
+        var _para;
+        _para = window.Paradoc._para;
+        return $(".plateview").html(_para.html()).css({
+          zoom: '50%'
+        });
       });
     },
     dotemplate: function(ev) {
-      var zcol;
-      zcol = $(".platesel").val();
-      if (!zcol) {
-        zcol = 'colc';
-      }
-      this.model.set("contents", plates[zcol]());
-      this.unbind();
-      this.remove();
-      return $(".paratab[data-paraname='" + this.model.get("name") + "']").click();
+      var self, source;
+      self = this;
+      source = $(".platesel").val();
+      return $.getScript(source, function(data) {
+        var _para;
+        _para = window.Paradoc._para;
+        self.model.set("contents", _para.html());
+        self.model.set("data", _para.data);
+        self.model.set("source", source);
+        self.unbind();
+        self.remove();
+        return $(".paratab[data-paraname='" + self.model.get("name") + "']").click();
+      });
     }
   });
 
@@ -1060,29 +1119,33 @@ attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow |
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<h3>Choose a template</h3><div style="margin:10px 5px" class="row-fluid"><div class="span3"><select size="10" style="width:90%" class="platesel"><option value="colc">Three column</option><option value="colb">Two column</option></select></div><div class="span9"><div style="margin:30px;padding:20px;min-height:250px;zoom:50%;border:1px solid #cccccc" class="plateview">select a template</div></div></div><div style="margin:10px" class="row-fluid"><div class="pull-right"><button class="btn dotemplate">Create</button></div></div>');
-}
-return buf.join("");
-};
-});
+buf.push('<h3>Choose a template</h3><div style="margin:10px 5px" class="row-fluid"><div class="span3"><select size="10" style="width:90%" class="platesel">');
+// iterate plates
+;(function(){
+  if ('number' == typeof plates.length) {
 
-require.define("/plugins/colb.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
-attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<h3>Two columns</h3><div style="margin:10px 5px" class="row-fluid"><div class="span6"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div><div class="span6"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div></div><div style="margin:10px" class="row-fluid">more text here</div>');
-}
-return buf.join("");
-};
-});
+    for (var $index = 0, $$l = plates.length; $index < $$l; $index++) {
+      var plate = plates[$index];
 
-require.define("/plugins/colc.jade",function(require,module,exports,__dirname,__filename,process,global){module.exports = function anonymous(locals, attrs, escape, rethrow, merge) {
-attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow || jade.rethrow; merge = merge || jade.merge;
-var buf = [];
-with (locals || {}) {
-var interp;
-buf.push('<h3>Lots of links</h3><div style="margin:10px 5px" class="row-fluid"><div class="span4"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div><div class="span4"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div><div class="span4"><ul><li>Link</li><li>Link</li><li>Link</li></ul></div></div><div style="margin:10px" class="row-fluid">more text here</div>');
+buf.push('<option');
+buf.push(attrs({ 'value':('' + (plate.source) + '') }, {"value":true}));
+buf.push('>' + escape((interp = plate.label) == null ? '' : interp) + '</option>');
+    }
+
+  } else {
+    var $$l = 0;
+    for (var $index in plates) {
+      $$l++;      var plate = plates[$index];
+
+buf.push('<option');
+buf.push(attrs({ 'value':('' + (plate.source) + '') }, {"value":true}));
+buf.push('>' + escape((interp = plate.label) == null ? '' : interp) + '</option>');
+    }
+
+  }
+}).call(this);
+
+buf.push('</select></div><div class="span9"><div style="margin:30px;padding:20px;min-height:250px;zoom:50%;border:1px solid #cccccc" class="plateview">select a template</div></div></div><div style="margin:10px" class="row-fluid"><div class="pull-right"><button class="btn dotemplate">Create</button></div></div>');
 }
 return buf.join("");
 };
@@ -1106,6 +1169,10 @@ require.define("/utils/utils.coffee",function(require,module,exports,__dirname,_
       jsonpCallback: "paradocJson",
       success: function(data) {
         return cb(data);
+      },
+      error: function(xhr, text, err) {
+        console.log('err ' + err);
+        return console.log('url ' + url);
       }
     });
   };
@@ -1148,13 +1215,13 @@ require.define("/paras/oneparaactions.coffee",function(require,module,exports,__
     },
     doedit: function(ev) {
       Paradoc.isediting = true;
-      this.options.paraview.showedit();
+      this.options.thepara.showedit();
       $(".savegroup", this.el).show();
       return $(".editgroup", this.el).hide();
     },
     doxncl: function(ev) {
       Paradoc.isediting = false;
-      this.options.paraview.showview();
+      this.options.thepara.showview();
       $(".savegroup", self.el).hide();
       return $(".editgroup", self.el).show();
     },
@@ -1162,31 +1229,26 @@ require.define("/paras/oneparaactions.coffee",function(require,module,exports,__
       return Paradoc.paratabs.rmatab(this.model.get("name"));
     },
     dosave: function(ev) {
-      var paraname, paratext, self;
+      var paramodel, paraname, self;
       self = this;
-      paratext = this.options.paraview.getPararaw();
-      paraname = this.options.paraview.model.get("name");
+      paramodel = this.options.thepara.getModel();
+      paraname = paramodel.get("name");
       return Paradoc.paras.each(function(m) {
         var d;
         if (m.get("name") === paraname) {
-          m.set("contents", paratext);
-          self.options.paraview.model.set('contents', paratext);
+          m = paramodel;
           d = {
             paras: Paradoc.paras.toJSON()
           };
-          console.log('saving to ' + Paradoc.doc);
           return dropio.save(Paradoc.doc, JSON.stringify(d), function() {
-            Paradoc.isediting = false;
-            self.options.paraview.showview();
-            $(".savegroup", self.el).hide();
-            return $(".editgroup", self.el).show();
+            return self.doxncl();
           });
         }
       });
     },
     dodel: function(ev) {
       var mrs, paraslug;
-      paraslug = this.options.paraview.model.get("slug");
+      paraslug = this.options.thepara.model.get("slug");
       mrs = Paradoc.paras.where({
         slug: paraslug
       });
@@ -1637,7 +1699,7 @@ attrs = attrs || jade.attrs; escape = escape || jade.escape; rethrow = rethrow |
 var buf = [];
 with (locals || {}) {
 var interp;
-buf.push('<html><head><title>PureJasper - Personal wikis</title><link href="http://purejasper.com/e/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"/><link href="http://purejasper.com/e/css/bootstrap-wysihtml5.css" rel="stylesheet" media="screen"/><link rel="http://purejasper.com/e/stylesheet/less" type="text/css" href="./app.less"/><script type="text/javascript" src="http://purejasper.com/e/lib/underscore-min.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/dropbox.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/wysihtml5-0.3.0.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/jquery.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/backbone-min.js"></script><script type="text/javascript" src="http://purejasper.com/e/bootstrap/js/bootstrap.min.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/less.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/showdown.js"></script><script type="text/javascript" src="http://purejasper.com/e/lib/bs-wysi5.js"></script></head><body style="background-color:#f4f4f4"><div style="text-align:center"><h1 style="margin:100px auto">Loading...</h1></div><script>var jdoc = ' + ((interp = paras) == null ? '' : interp) + ';\n</script><script type="text/javascript" src="http://purejasper.com/e/client_pjview.min.js?v=#_now}"></script></body></html>');
+buf.push('<html><head><title>PureJasper - Personal wikis</title><link href="http://purejasper.com/e/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen"/><link href="http://purejasper.com/e/css/bootstrap-wysihtml5.css" rel="stylesheet" media="screen"/><link rel="http://purejasper.com/e/stylesheet/less" type="text/css" href="./app.less"/><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/underscore-min.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/dropbox.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/wysihtml5-0.3.0.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/jquery.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/backbone-min.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/bootstrap/js/bootstrap.min.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/less.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/showdown.js"></script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/lib/bs-wysi5.js"></script></head><body style="background-color:#f4f4f4"><div style="text-align:center"><h1 style="margin:100px auto">Loading...</h1></div><script>var jdoc = ' + ((interp = paras) == null ? '' : interp) + ';\n</script><script type="text/javascript" src="//ssr1ram.github.io/purejasper/e/client_pjview.min.js?v=#_now}"></script></body></html>');
 }
 return buf.join("");
 };
