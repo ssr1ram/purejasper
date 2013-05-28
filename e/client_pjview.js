@@ -804,25 +804,34 @@ require.define("/paras/onepara.coffee",function(require,module,exports,__dirname
           model: this.model,
           parent: $(".htmlarea")
         });
-      } else if (this.model.get("source")) {
-        return $.getScript(this.model.get("source")).done(function(data) {
-          console.log('aa');
-          self.plugin = window.Paradoc._para;
-          return self.plugin.zview = new window.Paradoc._para.showview({
-            model: self.model,
+      } else {
+        if (this.model.get("contents")) {
+          self.plugin = basicPM;
+          return self.plugin.zview = new self.plugin.showview({
+            model: this.model,
             parent: $(".htmlarea"),
             thepara: self
           });
-        }).fail(function(xhr, settings, exception) {
-          return console.log('err ' + exception);
-        });
-      } else {
-        self.plugin = basicPM;
-        return self.plugin.zview = new self.plugin.showview({
-          model: this.model,
-          parent: $(".htmlarea"),
-          thepara: self
-        });
+        } else if (this.model.get("source")) {
+          return $.getScript(this.model.get("source")).done(function(data) {
+            console.log('aa');
+            self.plugin = window.Paradoc._para;
+            return self.plugin.zview = new window.Paradoc._para.showview({
+              model: self.model,
+              parent: $(".htmlarea"),
+              thepara: self
+            });
+          }).fail(function(xhr, settings, exception) {
+            return console.log('err ' + exception);
+          });
+        } else {
+          self.plugin = basicPM;
+          return self.plugin.zview = new self.plugin.showview({
+            model: this.model,
+            parent: $(".htmlarea"),
+            thepara: self
+          });
+        }
       }
     },
     showedit: function() {
@@ -1222,6 +1231,9 @@ require.define("/db/dropio.coffee",function(require,module,exports,__dirname,__f
     },
     save: function(filename, contents, cb) {
       return this.client.writeFile(filename, contents, {}, function(err, stat) {
+        if (err) {
+          console.log(err);
+        }
         if (cb) {
           return cb();
         }

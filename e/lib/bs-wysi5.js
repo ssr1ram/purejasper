@@ -74,7 +74,7 @@
         "font-styles": true,
         "emphasis": true,
         "lists": true,
-        "html": true,
+        "html": false,
         "link": true,
         "image": true,
         events: {},
