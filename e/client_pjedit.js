@@ -1068,7 +1068,7 @@ require.define("/plugins/platesel.coffee",function(require,module,exports,__dirn
       var self;
       self = this;
       console.log('a');
-      return utils.getJson("/data/plates/list.jsonp", function(data) {
+      return utils.getJson("/e/data/plates/list.jsonp", function(data) {
         $(self.el).html(plateselT({
           plates: data['plates']
         }));
