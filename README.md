@@ -1,5 +1,5 @@
-Purejasper
-===========
+Purejasper App
+==============
 
 A Purejasper is an Html5 notebook with tabs & links.
 
